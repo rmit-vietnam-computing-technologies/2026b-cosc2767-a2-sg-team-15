@@ -1,0 +1,113 @@
+# =========================================================
+# COSC2767 .gitignore — safe submission version
+# =========================================================
+
+# ---------------------------------------------------------
+# OS generated files
+# ---------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------------------------------------------------------
+# Editor / IDE files
+# ---------------------------------------------------------
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# ---------------------------------------------------------
+# Environment files and credentials
+# ---------------------------------------------------------
+# Encrypted secret files may be committed only after encryption.
+!*.sops.yaml
+!*.sops.yml
+!*.enc
+
+# Private keys and certificates — always keep out of Git.
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+*.ppk
+
+# Local SSH/AWS/Kubernetes credentials — always keep out of Git.
+.ssh/
+.aws/
+.kube/
+kubeconfig
+*.kubeconfig
+
+# ---------------------------------------------------------
+# Ansible private files
+# ---------------------------------------------------------
+.vault_pass
+vault_pass.txt
+*.vault
+
+# ---------------------------------------------------------
+# Local caches and temporary files
+# ---------------------------------------------------------
+.cache/
+.tmp/
+*.tmp
+*.bak
+*.backup
+
+# Allow the specific rollback copies used by Question 7.
+!**/index.jsp.tmp
+!**/index.jsp.bak
+!**/index.jsp.backup
+
+# ---------------------------------------------------------
+# Language/tool caches
+# ---------------------------------------------------------
+__pycache__/
+*.pyc
+.venv/
+venv/
+node_modules/
+.m2/
+.gradle/
+
+# ---------------------------------------------------------
+# Local tool state
+# ---------------------------------------------------------
+.docker/
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+
+# ---------------------------------------------------------
+# Empty directories required by the exam
+# ---------------------------------------------------------
+# Git does not track empty directories. Add .gitkeep to any
+# required empty directory, e.g. my_project/bin/.gitkeep.
+!**/.gitkeep
+
+# ---------------------------------------------------------
+# Jenkins local state
+# ---------------------------------------------------------
+# Jenkins home can contain credentials, plugins, workspaces,
+# build history, and machine-specific state. Keep it ignored.
+# Permit only job configuration files intentionally submitted.
+.jenkins/*
+!.jenkins/jobs/
+.jenkins/jobs/**
+!.jenkins/jobs/**/
+!.jenkins/jobs/**/config.xml
+
+jenkins_home/*
+!jenkins_home/jobs/
+jenkins_home/jobs/**
+!jenkins_home/jobs/**/
+!jenkins_home/jobs/**/config.xml
