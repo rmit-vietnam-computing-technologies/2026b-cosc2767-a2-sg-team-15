@@ -37,12 +37,41 @@ pipeline {
             }
         }
 
-        // --- STAGE 3: BUILD DOCKER IMAGE (Dùng sudo) ---
+        // --- STAGE 3: ENSURE DOCKER IS RUNNING ON EC2 ---
+        stage('Ensure Docker is Running on EC2') {
+            steps {
+                echo '🔧 Checking if Docker is running on EC2...'
+                script {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no -i ~/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
+                            # Kiểm tra Docker có đang chạy không
+                            if ! sudo docker ps &> /dev/null; then
+                                echo 'Docker is not running. Starting Docker...'
+                                sudo service docker start
+                                # Đợi 5 giây để Docker khởi động hoàn toàn
+                                sleep 5
+                                # Kiểm tra lại sau khi start
+                                if sudo docker ps &> /dev/null; then
+                                    echo 'Docker started successfully.'
+                                else
+                                    echo 'Failed to start Docker. Please check manually.'
+                                    exit 1
+                                fi
+                            else
+                                echo 'Docker is already running.'
+                            fi
+                        "
+                    """
+                }
+                echo '✅ Docker is ready!'
+            }
+        }
+
+        // --- STAGE 4: BUILD DOCKER IMAGE (Dùng sudo) ---
         stage('Build Docker Image') {
             steps {
                 echo '🐳 Building Docker image...'
                 script {
-                    // Build image với tên Docker Hub + tên image + tag
                     sh """
                         sudo docker build -t ${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG} client/
                     """
@@ -51,12 +80,11 @@ pipeline {
             }
         }
 
-        // --- STAGE 4: PUSH DOCKER IMAGE LÊN DOCKER HUB (Dùng sudo) ---
+        // --- STAGE 5: PUSH DOCKER IMAGE LÊN DOCKER HUB (Dùng sudo) ---
         stage('Push Docker Image to Docker Hub') {
             steps {
                 echo '☁️ Pushing image to Docker Hub...'
                 script {
-                    // Đăng nhập Docker Hub và push image
                     sh """
                         echo ${DOCKER_HUB_PASSWORD} | sudo docker login -u ${DOCKER_HUB_USERNAME} --password-stdin
                         sudo docker push ${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
@@ -66,7 +94,7 @@ pipeline {
             }
         }
 
-        // --- STAGE 5: DEPLOY FRONTEND LÊN EC2 (Tất cả lệnh đều có sudo) ---
+        // --- STAGE 6: DEPLOY FRONTEND LÊN EC2 ---
         stage('Deploy Frontend to EC2') {
             steps {
                 echo '🚀 Deploying frontend to EC2...'
