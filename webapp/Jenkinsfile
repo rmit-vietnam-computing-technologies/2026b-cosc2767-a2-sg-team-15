@@ -5,14 +5,12 @@ pipeline {
         // ============================================
         // 📌 CẤU HÌNH DOCKER HUB
         // ============================================
-        // 🔴 QUAN TRỌNG: Thay DOCKER_HUB_USERNAME bằng username Docker Hub của bạn!
-        DOCKER_HUB_USERNAME = 'ztz99a2'  // Ví dụ: 'john_doe'
+        DOCKER_HUB_USERNAME = 'ztz99a2'
         DOCKER_IMAGE_NAME = 'rmit-store-frontend'
-        DOCKER_TAG = "${env.BUILD_ID}"  // Số lần build của Jenkins
+        DOCKER_TAG = "${env.BUILD_ID}"
         
-        // Thông tin EC2 để deploy (giữ nguyên)
-        DEPLOY_EC2_IP = '98.90.194.9'      // IP của EC2 Docker
-        DEPLOY_EC2_USER = 'ec2-user'              // User mặc định của Amazon Linux
+        DEPLOY_EC2_IP = '98.90.194.9'
+        DEPLOY_EC2_USER = 'ec2-user'
     }
 
     stages {
@@ -39,33 +37,36 @@ pipeline {
             }
         }
 
-        // --- STAGE 3: BUILD DOCKER IMAGE ---
+        // --- STAGE 3: BUILD DOCKER IMAGE (Dùng sudo) ---
         stage('Build Docker Image') {
             steps {
                 echo '🐳 Building Docker image...'
                 script {
                     // Build image với tên Docker Hub + tên image + tag
-                    docker.build("${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}")
+                    sh """
+                        sudo docker build -t ${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG} client/
+                    """
                 }
                 echo '✅ Docker image built!'
             }
         }
 
-        // --- STAGE 4: PUSH DOCKER IMAGE LÊN DOCKER HUB ---
+        // --- STAGE 4: PUSH DOCKER IMAGE LÊN DOCKER HUB (Dùng sudo) ---
         stage('Push Docker Image to Docker Hub') {
             steps {
                 echo '☁️ Pushing image to Docker Hub...'
                 script {
-                    // Đăng nhập Docker Hub (Jenkins sẽ dùng credentials đã lưu)
-                    docker.withRegistry('', 'docker-hub-credentials') {
-                        docker.image("${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}").push()
-                    }
+                    // Đăng nhập Docker Hub và push image
+                    sh """
+                        echo ${DOCKER_HUB_PASSWORD} | sudo docker login -u ${DOCKER_HUB_USERNAME} --password-stdin
+                        sudo docker push ${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
+                    """
                 }
                 echo '✅ Image pushed successfully!'
             }
         }
 
-        // --- STAGE 5: DEPLOY FRONTEND LÊN EC2 ---
+        // --- STAGE 5: DEPLOY FRONTEND LÊN EC2 (Tất cả lệnh đều có sudo) ---
         stage('Deploy Frontend to EC2') {
             steps {
                 echo '🚀 Deploying frontend to EC2...'
@@ -73,14 +74,14 @@ pipeline {
                     sh """
                         ssh -o StrictHostKeyChecking=no -i ~/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
                             # Kéo image mới nhất từ Docker Hub
-                            docker pull ${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
+                            sudo docker pull ${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
                             
                             # Dừng và xóa container cũ (nếu có)
-                            docker stop frontend-container || true
-                            docker rm frontend-container || true
+                            sudo docker stop frontend-container || true
+                            sudo docker rm frontend-container || true
                             
                             # Chạy container mới từ image vừa kéo, ánh xạ cổng 80 (HTTP) ra ngoài
-                            docker run -d --name frontend-container -p 80:80 ${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
+                            sudo docker run -d --name frontend-container -p 80:80 ${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
                         "
                     """
                 }
