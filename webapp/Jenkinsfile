@@ -43,7 +43,7 @@ pipeline {
                 echo '🔧 Checking if Docker is running on EC2...'
                 script {
                     sh """
-                        ssh -o StrictHostKeyChecking=no -i ~/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
+                        ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
                             # Kiểm tra Docker có đang chạy không
                             if ! sudo docker ps &> /dev/null; then
                                 echo 'Docker is not running. Starting Docker...'
@@ -67,27 +67,38 @@ pipeline {
             }
         }
 
-        // --- STAGE 4: BUILD DOCKER IMAGE (Dùng sudo) ---
+        // --- STAGE 4: BUILD DOCKER IMAGE (Trên Docker Server) ---
         stage('Build Docker Image') {
             steps {
-                echo '🐳 Building Docker image...'
+                echo '🐳 Building Docker image on Docker Server...'
                 script {
                     sh """
-                        sudo docker build -t ${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG} client/
+                        ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
+                            # Di chuyển đến thư mục client (chứa Dockerfile)
+                            cd /home/ec2-user/client
+                            
+                            # Build Docker image
+                            sudo docker build -t ${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG} .
+                        "
                     """
                 }
-                echo '✅ Docker image built!'
+                echo '✅ Docker image built on Docker Server!'
             }
         }
 
-        // --- STAGE 5: PUSH DOCKER IMAGE LÊN DOCKER HUB (Dùng sudo) ---
+        // --- STAGE 5: PUSH DOCKER IMAGE LÊN DOCKER HUB (Trên Docker Server) ---
         stage('Push Docker Image to Docker Hub') {
             steps {
-                echo '☁️ Pushing image to Docker Hub...'
+                echo '☁️ Pushing image to Docker Hub from Docker Server...'
                 script {
                     sh """
-                        echo ${DOCKER_HUB_PASSWORD} | sudo docker login -u ${DOCKER_HUB_USERNAME} --password-stdin
-                        sudo docker push ${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
+                        ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
+                            # Đăng nhập Docker Hub
+                            echo '${DOCKER_HUB_PASSWORD}' | sudo docker login -u ${DOCKER_HUB_USERNAME} --password-stdin
+                            
+                            # Push image lên Docker Hub
+                            sudo docker push ${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
+                        "
                     """
                 }
                 echo '✅ Image pushed successfully!'
@@ -100,7 +111,7 @@ pipeline {
                 echo '🚀 Deploying frontend to EC2...'
                 script {
                     sh """
-                        ssh -o StrictHostKeyChecking=no -i ~/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
+                        ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
                             # Kéo image mới nhất từ Docker Hub
                             sudo docker pull ${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
                             
