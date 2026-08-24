@@ -37,7 +37,7 @@ pipeline {
             }
         }
 
-        // --- STAGE 3: COPY CODE TO DOCKER SERVER ---
+        // --- STAGE 3: COPY CODE TO DOCKER SERVER (ĐÃ SỬA) ---
         stage('Copy Frontend Code to Docker Server') {
             steps {
                 echo '📂 Copying frontend code to Docker Server...'
@@ -46,8 +46,8 @@ pipeline {
                         # Tạo thư mục client trên Docker Server (nếu chưa có)
                         ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "mkdir -p /home/ec2-user/client"
                         
-                        # Copy toàn bộ code từ client/ (bao gồm cả dist/ đã build) sang Docker Server
-                        scp -r -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem client/* ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP}:/home/ec2-user/client/
+                        # Copy các thư mục và file cần thiết, LOẠI BỎ vite.config.js
+                        scp -r -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem client/dist client/index.html client/node_modules client/package-lock.json client/package.json client/public client/src ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP}:/home/ec2-user/client/
                     """
                 }
                 echo '✅ Code copied!'
