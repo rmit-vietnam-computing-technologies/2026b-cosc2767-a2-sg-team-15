@@ -32,7 +32,9 @@ All EC2 instances run the Debian AMI, using the `t3.micro` instance type.
   - If you use Windows 11, these should be available via `winget`.
 - Run `tofu init` or `terraform init` to set up the working environment
 - Grab the **AWS Access key ID** and the **AWS Secret access key** from the Learner Lab launching page (picture below, click **Show** next to AWS CLI)
+
 ![how to access AWS Key](../../assets/aws-keys-howto.png)
+
 - Run `tofu plan` or `terraform plan` to check the AWS connection and see the changes being made.
 
 ### The Not-secure part
