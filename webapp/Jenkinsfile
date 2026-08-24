@@ -37,7 +37,24 @@ pipeline {
             }
         }
 
-        // --- STAGE 3: ENSURE DOCKER IS RUNNING ON EC2 ---
+        // --- STAGE 3: COPY CODE TO DOCKER SERVER ---
+        stage('Copy Frontend Code to Docker Server') {
+            steps {
+                echo '📂 Copying frontend code to Docker Server...'
+                script {
+                    sh """
+                        # Tạo thư mục client trên Docker Server (nếu chưa có)
+                        ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "mkdir -p /home/ec2-user/client"
+                        
+                        # Copy toàn bộ code từ client/ (bao gồm cả dist/ đã build) sang Docker Server
+                        scp -r -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem client/* ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP}:/home/ec2-user/client/
+                    """
+                }
+                echo '✅ Code copied!'
+            }
+        }
+
+        // --- STAGE 4: ENSURE DOCKER IS RUNNING ON EC2 ---
         stage('Ensure Docker is Running on EC2') {
             steps {
                 echo '🔧 Checking if Docker is running on EC2...'
@@ -67,7 +84,7 @@ pipeline {
             }
         }
 
-        // --- STAGE 4: BUILD DOCKER IMAGE (Trên Docker Server) ---
+        // --- STAGE 5: BUILD DOCKER IMAGE (Trên Docker Server) ---
         stage('Build Docker Image') {
             steps {
                 echo '🐳 Building Docker image on Docker Server...'
@@ -86,7 +103,7 @@ pipeline {
             }
         }
 
-        // --- STAGE 5: PUSH DOCKER IMAGE LÊN DOCKER HUB (Trên Docker Server) ---
+        // --- STAGE 6: PUSH DOCKER IMAGE LÊN DOCKER HUB (Trên Docker Server) ---
         stage('Push Docker Image to Docker Hub') {
             steps {
                 echo '☁️ Pushing image to Docker Hub from Docker Server...'
@@ -105,7 +122,7 @@ pipeline {
             }
         }
 
-        // --- STAGE 6: DEPLOY FRONTEND LÊN EC2 ---
+        // --- STAGE 7: DEPLOY FRONTEND LÊN EC2 ---
         stage('Deploy Frontend to EC2') {
             steps {
                 echo '🚀 Deploying frontend to EC2...'
