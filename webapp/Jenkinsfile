@@ -9,7 +9,7 @@ pipeline {
     }
 
     stages {
-        // --- STAGE 1: BUILD FRONTEND ---
+        // STAGE 1: BUILD FRONTEND 
         stage('Build Frontend') {
             steps {
                 echo ' Building Vue application inside client directory. Producing a /dist folder for frontend deployment'
@@ -21,7 +21,7 @@ pipeline {
             }
         }
 
-        // --- STAGE 2: TEST FRONTEND ---
+        // STAGE 2: TEST FRONTEND 
         stage('Test Frontend') {
             steps {
                 echo 'Placeholder testing(To be added later)'
@@ -32,13 +32,16 @@ pipeline {
             }
         }
 
-        // --- STAGE 3: COPY CODE TO DOCKER SERVER ---
-        stage('Copy Frontend Code to Docker Server') {
+        // STAGE 3: COPY CODE TO DOCKER SERVER 
+        stage('Deleting old files and copying Frontend Code to Docker Server') {
             steps {
                 echo 'Copying frontend code to Docker Server...'
                 script {
                     sh """
-                        ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "mkdir -p /home/ec2-user/client"
+                        ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
+                         rm -rf /home/ec2-user/client
+                        mkdir -p /home/ec2-user/client
+                        "
                         
                         scp -r -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem \
                             client/dist \
@@ -55,7 +58,7 @@ pipeline {
             }
         }
 
-        // --- STAGE 4: ENSURE DOCKER IS RUNNING ON EC2 ---
+        //  STAGE 4: ENSURE DOCKER IS RUNNING ON EC2 
         stage('Ensure Docker is Running on EC2') {
             steps {
                 echo '🔧 Checking if Docker is running on EC2...'
@@ -82,7 +85,7 @@ pipeline {
             }
         }
 
-        // --- STAGE 5: BUILD DOCKER IMAGE (Trên Docker Server) ---
+        // STAGE 5: BUILD DOCKER IMAGE 
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image on Docker Server and deleting any previous container'
@@ -98,7 +101,7 @@ pipeline {
             }
         }
 
-        // --- STAGE 6: DEPLOY FRONTEND LÊN EC2 ---
+        // STAGE 6: DEPLOY FRONTEND LÊN EC2
         stage('Deploy Frontend to EC2 on port 80') {
             steps {
                 echo 'Deploying frontend to EC2'
