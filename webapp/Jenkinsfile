@@ -51,6 +51,7 @@ pipeline {
                             client/public \
                             client/src \
                             client/vite.config.js \
+                            client/Dockerfile \
                             ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP}:/home/ec2-user/client/
                     """
                 }
