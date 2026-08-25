@@ -102,7 +102,7 @@ pipeline {
             }
         }
 
-        // STAGE 6: DEPLOY FRONTEND LÊN EC2
+        // STAGE 6: DEPLOY FRONTEND on DOCKER SERVER EC2
         stage('Deploy Frontend to EC2 on port 80') {
             steps {
                 echo 'Deploying frontend to EC2'
