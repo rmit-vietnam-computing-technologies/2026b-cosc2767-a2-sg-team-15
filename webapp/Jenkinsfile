@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKER_IMAGE_NAME = 'rmit-store-frontend'
         DOCKER_TAG = "${env.BUILD_ID}"
-        DEPLOY_EC2_IP = '54.146.239.218'
+        DEPLOY_EC2_IP = '172.31.21.36'
         DEPLOY_EC2_USER = 'ec2-user'
     }
 
