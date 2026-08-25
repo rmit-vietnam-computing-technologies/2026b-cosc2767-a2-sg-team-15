@@ -26,7 +26,7 @@ pipeline {
             }
         }
 
-        // --- STAGE 2: TEST FRONTEND (Tùy chọn) ---
+        // --- STAGE 2: TEST FRONTEND ---
         stage('Test Frontend') {
             steps {
                 echo '🧪 Running frontend tests...'
@@ -37,7 +37,7 @@ pipeline {
             }
         }
 
-        // --- STAGE 3: COPY CODE TO DOCKER SERVER (ĐÃ SỬA) ---
+        // --- STAGE 3: COPY CODE TO DOCKER SERVER ---
         stage('Copy Frontend Code to Docker Server') {
             steps {
                 echo '📂 Copying frontend code to Docker Server...'
@@ -46,8 +46,21 @@ pipeline {
                         # Tạo thư mục client trên Docker Server (nếu chưa có)
                         ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "mkdir -p /home/ec2-user/client"
                         
-                        # Copy các thư mục và file cần thiết, LOẠI BỎ vite.config.js
-                        scp -r -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem client/dist client/index.html client/node_modules client/package-lock.json client/package.json client/public client/src ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP}:/home/ec2-user/client/
+                        # ============================================================
+                        # ✅ COPY SOURCE CODE (KHÔNG copy node_modules)
+                        # - Dockerfile đã có sẵn trên Docker Server
+                        # - dist/ đã được build sẵn trên Jenkins
+                        # - KHÔNG copy node_modules (tránh lỗi không tương thích)
+                        # ============================================================
+                        scp -r -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem \
+                            client/dist \
+                            client/index.html \
+                            client/package-lock.json \
+                            client/package.json \
+                            client/public \
+                            client/src \
+                            client/vite.config.js \
+                            ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP}:/home/ec2-user/client/
                     """
                 }
                 echo '✅ Code copied!'
@@ -91,7 +104,7 @@ pipeline {
                 script {
                     sh """
                         ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
-                            # Di chuyển đến thư mục client (chứa Dockerfile)
+                            # Di chuyển đến thư mục client (chứa Dockerfile đã có sẵn)
                             cd /home/ec2-user/client
                             
                             # Build Docker image
@@ -103,7 +116,7 @@ pipeline {
             }
         }
 
-        // --- STAGE 6: PUSH DOCKER IMAGE LÊN DOCKER HUB (Trên Docker Server) ---
+        // --- STAGE 6: PUSH DOCKER IMAGE LÊN DOCKER HUB ---
         stage('Push Docker Image to Docker Hub') {
             steps {
                 echo '☁️ Pushing image to Docker Hub from Docker Server...'
@@ -136,8 +149,12 @@ pipeline {
                             sudo docker stop frontend-container || true
                             sudo docker rm frontend-container || true
                             
-                            # Chạy container mới từ image vừa kéo, ánh xạ cổng 80 (HTTP) ra ngoài
-                            sudo docker run -d --name frontend-container -p 80:80 ${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
+                            # Chạy container mới
+                            sudo docker run -d \\
+                                --name frontend-container \\
+                                -p 80:80 \\
+                                --restart unless-stopped \\
+                                ${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
                         "
                     """
                 }
