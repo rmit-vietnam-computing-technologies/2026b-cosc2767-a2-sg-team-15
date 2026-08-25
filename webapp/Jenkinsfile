@@ -12,30 +12,30 @@ pipeline {
         // --- STAGE 1: BUILD FRONTEND ---
         stage('Build Frontend') {
             steps {
-                echo '📦 Building Vue application...'
+                echo ' Building Vue application inside client directory. Producing a /dist folder for frontend deployment'
                 dir('client') {
                     sh 'npm install'
                     sh 'npm run build'
                 }
-                echo '✅ Build completed!'
+                echo 'Build completed'
             }
         }
 
         // --- STAGE 2: TEST FRONTEND ---
         stage('Test Frontend') {
             steps {
-                echo '🧪 Running frontend tests...'
+                echo 'Placeholder testing(To be added later)'
                 dir('client') {
                     // sh 'npm run test:unit'
                 }
-                echo '✅ Tests passed!'
+                echo 'Tests passed!'
             }
         }
 
         // --- STAGE 3: COPY CODE TO DOCKER SERVER ---
         stage('Copy Frontend Code to Docker Server') {
             steps {
-                echo '📂 Copying frontend code to Docker Server...'
+                echo 'Copying frontend code to Docker Server...'
                 script {
                     sh """
                         ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "mkdir -p /home/ec2-user/client"
@@ -51,7 +51,7 @@ pipeline {
                             ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP}:/home/ec2-user/client/
                     """
                 }
-                echo '✅ Code copied!'
+                echo 'Frontend copied!'
             }
         }
 
@@ -78,7 +78,7 @@ pipeline {
                         "
                     """
                 }
-                echo '✅ Docker is ready!'
+                echo 'Docker is ready!'
             }
         }
 
@@ -94,7 +94,7 @@ pipeline {
                         "
                     """
                 }
-                echo '✅ Docker image built on Docker Server!'
+                echo 'Docker image built on Docker Server!'
             }
         }
 
@@ -105,11 +105,11 @@ pipeline {
                 script {
                     sh """
                         ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
-                            # Dừng và xóa container cũ (nếu có)
+                            # Stop running containers
                             sudo docker stop frontend-container || true
                             sudo docker rm frontend-container || true
                             
-                            # Chạy container mới từ image local (đã build sẵn)
+                            # Run new containers
                             sudo docker run -d \\
                                 --name frontend-container \\
                                 -p 80:80 \\
@@ -118,7 +118,7 @@ pipeline {
                         "
                     """
                 }
-                echo '✅ Deployment completed!'
+                echo 'Deployment completed!'
             }
         }
     }
