@@ -2,13 +2,8 @@ pipeline {
     agent any
 
     environment {
-        // ============================================
-        // 📌 CẤU HÌNH DOCKER HUB
-        // ============================================
-        DOCKER_HUB_USERNAME = 'ztz99a2'
         DOCKER_IMAGE_NAME = 'rmit-store-frontend'
         DOCKER_TAG = "${env.BUILD_ID}"
-        
         DEPLOY_EC2_IP = '54.159.0.57'
         DEPLOY_EC2_USER = 'ec2-user'
     }
@@ -43,15 +38,8 @@ pipeline {
                 echo '📂 Copying frontend code to Docker Server...'
                 script {
                     sh """
-                        # Tạo thư mục client trên Docker Server (nếu chưa có)
                         ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "mkdir -p /home/ec2-user/client"
                         
-                        # ============================================================
-                        # ✅ COPY SOURCE CODE (KHÔNG copy node_modules)
-                        # - Dockerfile đã có sẵn trên Docker Server
-                        # - dist/ đã được build sẵn trên Jenkins
-                        # - KHÔNG copy node_modules (tránh lỗi không tương thích)
-                        # ============================================================
                         scp -r -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem \
                             client/dist \
                             client/index.html \
@@ -74,17 +62,14 @@ pipeline {
                 script {
                     sh """
                         ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
-                            # Kiểm tra Docker có đang chạy không
                             if ! sudo docker ps &> /dev/null; then
                                 echo 'Docker is not running. Starting Docker...'
                                 sudo service docker start
-                                # Đợi 5 giây để Docker khởi động hoàn toàn
                                 sleep 5
-                                # Kiểm tra lại sau khi start
                                 if sudo docker ps &> /dev/null; then
                                     echo 'Docker started successfully.'
                                 else
-                                    echo 'Failed to start Docker. Please check manually.'
+                                    echo 'Failed to start Docker.'
                                     exit 1
                                 fi
                             else
@@ -104,11 +89,8 @@ pipeline {
                 script {
                     sh """
                         ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
-                            # Di chuyển đến thư mục client (chứa Dockerfile đã có sẵn)
                             cd /home/ec2-user/client
-                            
-                            # Build Docker image
-                            sudo docker build -t ${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG} .
+                            sudo docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} .
                         "
                     """
                 }
@@ -116,45 +98,23 @@ pipeline {
             }
         }
 
-        // --- STAGE 6: PUSH DOCKER IMAGE LÊN DOCKER HUB ---
-        stage('Push Docker Image to Docker Hub') {
-            steps {
-                echo '☁️ Pushing image to Docker Hub from Docker Server...'
-                script {
-                    sh """
-                        ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
-                            # Đăng nhập Docker Hub
-                            echo '${DOCKER_HUB_PASSWORD}' | sudo docker login -u ${DOCKER_HUB_USERNAME} --password-stdin
-                            
-                            # Push image lên Docker Hub
-                            sudo docker push ${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
-                        "
-                    """
-                }
-                echo '✅ Image pushed successfully!'
-            }
-        }
-
-        // --- STAGE 7: DEPLOY FRONTEND LÊN EC2 ---
+        // --- STAGE 6: DEPLOY FRONTEND LÊN EC2 ---
         stage('Deploy Frontend to EC2') {
             steps {
                 echo '🚀 Deploying frontend to EC2...'
                 script {
                     sh """
                         ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
-                            # Kéo image mới nhất từ Docker Hub
-                            sudo docker pull ${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
-                            
                             # Dừng và xóa container cũ (nếu có)
                             sudo docker stop frontend-container || true
                             sudo docker rm frontend-container || true
                             
-                            # Chạy container mới
+                            # Chạy container mới từ image local (đã build sẵn)
                             sudo docker run -d \\
                                 --name frontend-container \\
                                 -p 80:80 \\
                                 --restart unless-stopped \\
-                                ${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
+                                ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
                         "
                     """
                 }
@@ -163,7 +123,6 @@ pipeline {
         }
     }
 
-    // --- POST-BUILD ACTIONS ---
     post {
         success {
             echo '🎉 Pipeline succeeded!'
