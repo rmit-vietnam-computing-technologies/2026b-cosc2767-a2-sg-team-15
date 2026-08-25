@@ -1,14 +1,15 @@
 # DO NOT BUILD INSIDE CONTAINER, ONLY TAKE FROM EXISTING /dist
-FROM nginx:alpine
+# Get a ngix docker image, version alpine
+FROM nginx:alpine 
 
-# Copy existing /dst
+# Copy existing /dst created from npm run build
 COPY dist /usr/share/nginx/html
 
-# Copy runtime config
+# Copy runtime config of compiled Vue into current container
 COPY public/config.js /usr/share/nginx/html/config.js
 
-# Configure Ngix
-RUN echo 'server { \
+# Configure Ngix in order for Ngix to listen in on Port 80, configure the default webpage access of html folder. /dist already has a index.html file so It will find it there
+RUN echo 'server { \ 
     listen 80; \
     root /usr/share/nginx/html; \
     index index.html; \
