@@ -85,7 +85,7 @@ pipeline {
         // --- STAGE 5: BUILD DOCKER IMAGE (Trên Docker Server) ---
         stage('Build Docker Image') {
             steps {
-                echo '🐳 Building Docker image on Docker Server...'
+                echo 'Building Docker image on Docker Server and deleting any previous container'
                 script {
                     sh """
                         ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
@@ -99,9 +99,9 @@ pipeline {
         }
 
         // --- STAGE 6: DEPLOY FRONTEND LÊN EC2 ---
-        stage('Deploy Frontend to EC2') {
+        stage('Deploy Frontend to EC2 on port 80') {
             steps {
-                echo '🚀 Deploying frontend to EC2...'
+                echo 'Deploying frontend to EC2'
                 script {
                     sh """
                         ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
