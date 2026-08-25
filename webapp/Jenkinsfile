@@ -112,7 +112,7 @@ pipeline {
                             # Run new containers
                             sudo docker run -d \\
                                 --name frontend-container \\
-                                -p 80:80 \\
+                                -p 8080:80 \\
                                 --restart unless-stopped \\
                                 ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
                         "
@@ -125,10 +125,10 @@ pipeline {
 
     post {
         success {
-            echo '🎉 Pipeline succeeded!'
+            echo 'Pipeline succeeded'
         }
         failure {
-            echo '❌ Pipeline failed!'
+            echo 'Pipeline failed'
         }
     }
 }
