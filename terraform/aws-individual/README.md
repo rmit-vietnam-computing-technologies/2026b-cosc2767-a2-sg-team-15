@@ -31,11 +31,14 @@ All EC2 instances run the Debian AMI, using the `t3.micro` instance type.
 - Download [Terraform](https://developer.hashicorp.com/terraform) or [OpenTofu](https://opentofu.org/), and [Ansible](https://docs.ansible.com/projects/ansible/latest/index.html)
   - If you use Windows 11, these should be available via `winget`.
 - Run `tofu init` or `terraform init` to set up the working environment
-- Grab the **AWS Access key ID** and the **AWS Secret access key** from the Learner Lab launching page (picture below, click **Show** next to AWS CLI)
+- Grab the **AWS Access key ID** and the **AWS Secret access key** from the Learner Lab launching page (picture below, click **Show** next to AWS CLI), and save that to `~/.aws/credentials` as instructed (I don't know where to save on windows)
 
 ![how to access AWS Key](../../assets/aws-keys-howto.png)
 
+
 - Run `tofu plan` or `terraform plan` to check the AWS connection and see the changes being made.
+- Run `tofu apply` to begin applying the infrastructure change
+- Run `tofu destroy` to delete everything in the infrastructure
 
 ### The Not-secure part
 
@@ -48,3 +51,4 @@ All EC2 instances run the Debian AMI, using the `t3.micro` instance type.
 
 - Thanks [swyrin](https://github.com/swyrin) for the initial Terraform and Ansible config for the deployment of (the late) `akvns.org`.
   - You may find most of the references [here](https://github.com/cyberowl-town/akvns.org)
+- Information regarding the Debian AMI image is read from [here](https://github.com/terraform-great-modules/terraform_aws_debian_ami/blob/master/main.tf)
