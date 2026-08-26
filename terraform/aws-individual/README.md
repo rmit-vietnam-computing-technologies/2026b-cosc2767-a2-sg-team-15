@@ -40,8 +40,9 @@ All EC2 instances run the Debian AMI, using the `t3.micro` instance type.
 - Run `tofu plan` or `terraform plan` to check the AWS connection and see the changes being made.
 - Run `tofu apply` to begin applying the infrastructure change
 - Run `tofu destroy` to delete everything in the infrastructure
-- Ansible soon:tm:
-
+- `tofu` will output the public IP of the two public instances, put them into `ansible/inventory.ini`
+- in the `ansible` directory, run `ansible-playbook -i inventory.ini playbook.yml` to set everything up for both servers
+ 
 ### The Not-secure part
 
 - SSH default port is enabled by default (port 22), so risk of scanning and attacking
