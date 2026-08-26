@@ -15,6 +15,7 @@
           - fontconfig
           - nginx
           - gnupg
+          - git
         state: present
 
     - name: Download jenkins repo key
