@@ -59,10 +59,10 @@
     - name: Check nginx configuration
       command: nginx -t
 
-    - name: Enable and start nginx
+    - name: Enable and restart nginx
       systemd:
         name: nginx
-        state: started
+        state: restarted
         enabled: true
 
     - name: Enable and start jenkins
