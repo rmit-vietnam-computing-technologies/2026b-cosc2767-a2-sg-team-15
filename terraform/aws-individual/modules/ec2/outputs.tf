@@ -18,7 +18,7 @@ output "main_instance_public_ip" {
   value = aws_instance.public_main.public_ip
 }
 
-output "jenkins_instance_public_up" {
+output "jenkins_instance_public_ip" {
   description = "The public IP of the Jenkins instance"
   value = aws_instance.public_jenkins.public_ip
 }
