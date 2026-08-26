@@ -41,6 +41,7 @@ All EC2 instances run the Debian AMI, using the `t3.micro` instance type.
 - Run `tofu apply` to begin applying the infrastructure change
 - Run `tofu destroy` to delete everything in the infrastructure
 - `tofu` will output the public IP of the two public instances, put them into `ansible/inventory.ini`
+  - Also set the path to the private keyfile here. If you use the `vockey` keypair, place the newly downloaded `labsuser.pem` in the `aws-individual` folder.
 - in the `ansible` directory, run `ansible-playbook -i inventory.ini playbook.yml` to set everything up for both servers
  
 ### The Not-secure part
