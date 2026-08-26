@@ -31,14 +31,16 @@ All EC2 instances run the Debian AMI, using the `t3.micro` instance type.
 - Download [Terraform](https://developer.hashicorp.com/terraform) or [OpenTofu](https://opentofu.org/), and [Ansible](https://docs.ansible.com/projects/ansible/latest/index.html)
   - If you use Windows 11, these should be available via `winget`.
 - Run `tofu init` or `terraform init` to set up the working environment
-- Grab the **AWS Access key ID** and the **AWS Secret access key** from the Learner Lab launching page (picture below, click **Show** next to AWS CLI), and save that to `~/.aws/credentials` as instructed (I don't know where to save on windows)
+- Grab the **AWS CLI Credentials** from the Learner Lab launching page (picture below, click **Show** next to AWS CLI), and save that to `~/.aws/credentials` as instructed (I don't know where to save on windows)
 
 ![how to access AWS Key](../../assets/aws-keys-howto.png)
 
-
+- Make a copy of `terraform.tfvars.example` and adjust the variables
+  - `keypair_name`: the name of the keypair you want to apply to the EC2 instances (the vockey is the one provided by the learner lab)
 - Run `tofu plan` or `terraform plan` to check the AWS connection and see the changes being made.
 - Run `tofu apply` to begin applying the infrastructure change
 - Run `tofu destroy` to delete everything in the infrastructure
+- Ansible soon:tm:
 
 ### The Not-secure part
 
