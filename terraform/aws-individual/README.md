@@ -38,6 +38,7 @@ All EC2 instances run the Debian AMI, using the `t3.micro` instance type.
 
 - Make a copy of `terraform.tfvars.example` and adjust the variables
   - `keypair_name`: the name of the keypair you want to apply to the EC2 instances (the vockey is the one provided by the learner lab)
+  - It is **required** that the keypair **not be** password protected for Ansible to work.
 - Run `tofu plan` to check the AWS connection and see the changes being made.
 - Run `tofu apply` to begin applying the infrastructure change
 - Run `tofu destroy` to delete everything in the infrastructure
