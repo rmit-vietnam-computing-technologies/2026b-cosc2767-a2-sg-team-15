@@ -21,21 +21,21 @@ pipeline {
             }
         }
 
-        // STAGE 2: TEST FRONTEND 
+        // STAGE 2: TEST FRONTEND (PLACEHOLDER)
         stage('Test Frontend') {
             steps {
                 echo 'Placeholder testing(To be added later)'
                 dir('client') {
                     // sh 'npm run test:unit'
                 }
-                echo 'Tests passed!'
+                echo 'Tests passed'
             }
         }
 
-        // STAGE 3: COPY CODE TO DOCKER SERVER 
+        // STAGE 3: COPY CODE TO DOCKER SERVER (AS EC2-USER)
         stage('Deleting old files and copying Frontend Code to Docker Server') {
             steps {
-                echo 'Copying frontend code to Docker Server...'
+                echo 'Copying produced /dist and relevant files into ec2-user home client folder'
                 script {
                     sh """
                         ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
@@ -55,19 +55,19 @@ pipeline {
                             ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP}:/home/ec2-user/client/
                     """
                 }
-                echo 'Frontend copied!'
+                echo 'Frontend code copied'
             }
         }
 
-        //  STAGE 4: ENSURE DOCKER IS RUNNING ON EC2 
-        stage('Ensure Docker is Running on EC2') {
+        //  STAGE 4: ENSURE DOCKER IS RUNNING ON EC2 INSTANCE
+        stage('Ensure Docker is Running on EC2 instance') {
             steps {
-                echo '🔧 Checking if Docker is running on EC2...'
+                echo 'Checking if Docker is currently running on deployed EC2 instance'
                 script {
                     sh """
                         ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
                             if ! sudo docker ps &> /dev/null; then
-                                echo 'Docker is not running. Starting Docker...'
+                                echo 'Docker is currently not running. Starting Docker...'
                                 sudo service docker start
                                 sleep 5
                                 if sudo docker ps &> /dev/null; then
@@ -86,7 +86,7 @@ pipeline {
             }
         }
 
-        // STAGE 5: BUILD DOCKER IMAGE 
+        // STAGE 5: BUILD DOCKER IMAGE FROM DOCKERFILE
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image on Docker Server and deleting any previous container'
@@ -98,7 +98,7 @@ pipeline {
                         "
                     """
                 }
-                echo 'Docker image built on Docker Server!'
+                echo 'Docker image built on Docker Server'
             }
         }
 
