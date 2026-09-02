@@ -67,7 +67,7 @@ ssh -T git@github.com      # "Hi <user>! You've successfully authenticated"
 **WSL users: this must be under `~`, never `/mnt/c/`.** Three reasons, and the
 first is a hard blocker:
 
-- You cannot `chmod 600` a file on the default `/mnt/c` mount — it reports
+- You cannot `chmod 600` a file on the default `/mnt/c` mount, it reports
   `0777` whatever you do. `ssh` and Ansible both refuse a private key that
   permissive, and you will need `labsuser.pem` at `600` for every Ansible run
   in this assignment.
@@ -113,7 +113,7 @@ Sanity check in the integrated terminal:
 
 ```bash
 uname -a     # Linux ... WSL2
-pwd          # /home/<user>/work/...  — not /mnt/c/
+pwd          # /home/<user>/work/... , not /mnt/c/
 ```
 
 ---
@@ -175,7 +175,7 @@ sudo dnf install -y nodejs
 `venv` is built into Fedora's Python; there is no separate package.
 
 **Both.** Node from the distribution repositories is far too old, so both paths
-use NodeSource — the same method Plan B uses on EC2, which keeps the version
+use NodeSource, the same method Plan B uses on EC2, which keeps the version
 consistent between laptops and the server.
 
 Verify:
@@ -217,7 +217,7 @@ printf '[boot]\nsystemd=true\n' | sudo tee /etc/wsl.conf
 then run `wsl --shutdown` in PowerShell and reopen. After that,
 `sudo systemctl enable --now postgresql` works normally.
 
-**Fedora.** No cluster is created at install time — you have to do it:
+**Fedora.** No cluster is created at install time, you have to do it:
 
 ```bash
 sudo postgresql-setup --initdb
@@ -238,7 +238,7 @@ sudo systemctl reload postgresql
 grep '^host' /var/lib/pgsql/data/pg_hba.conf     # should say scram-sha-256
 ```
 
-The `local ... peer` lines are deliberately left alone — that is what
+The `local ... peer` lines are deliberately left alone, that is what
 `sudo -u postgres psql` uses, and changing them locks you out of the database.
 
 This is the same fix Plan B applies on Amazon Linux 2023, which is also Red Hat
@@ -252,7 +252,7 @@ sudo -u postgres psql -c "CREATE ROLE rmit LOGIN PASSWORD 'rmit' CREATEDB;"
 sudo -u postgres psql -c "CREATE DATABASE rmit_store OWNER rmit;"
 ```
 
-### Verify — and note the `-h localhost`
+### Verify, and note the `-h localhost`
 
 ```bash
 psql -h localhost -U rmit -d rmit_store -c "SELECT version();"
@@ -263,14 +263,14 @@ Password is `rmit`.
 The upstream README gives this without `-h localhost`. On Ubuntu that fails
 with **`Peer authentication failed for user "rmit"`**. Without a host, `psql`
 uses the Unix domain socket, and Ubuntu's default `pg_hba.conf` sets
-`local all all peer` — peer auth matches the database role against your *Linux*
+`local all all peer`, peer auth matches the database role against your *Linux*
 username, and there is no Linux user called `rmit`. Passing `-h localhost`
 forces a TCP connection, which `pg_hba.conf` handles with `scram-sha-256`
 instead.
 
 This is not a problem for the application. `DATABASE_URL` already specifies
 `@localhost`, so Django connects over TCP and never touches the socket. It only
-bites when you drive `psql` by hand — which you will, constantly, from here on.
+bites when you drive `psql` by hand, which you will, constantly, from here on.
 
 ---
 
@@ -289,14 +289,14 @@ cp .env.example .env
 ```
 
 `.venv/` and `.env` are both gitignored. Read `server/.env.example` properly
-before moving on — it is the best documentation in the repository, and every
+before moving on, it is the best documentation in the repository, and every
 variable in it becomes a decision the pipeline has to make. The defaults are
 correct for local work; change nothing yet.
 
 Two things in there that matter later:
 
 - `DJANGO_SETTINGS_MODULE` is read from `.env` under `manage.py`, but **gunicorn
-  never reads `.env` at all** — `wsgi.py` runs before anything loads it, and
+  never reads `.env` at all**, `wsgi.py` runs before anything loads it, and
   defaults to `config.settings.prod`. That asymmetry is deliberate, and it is
   why Plan B's gunicorn command passes settings explicitly.
 - `USE_S3=False` writes uploads to `server/media/` on local disk. That is the
@@ -313,7 +313,7 @@ python manage.py migrate
 Expect a wall of `Applying <app>.<migration>... OK`.
 
 This command has to run on **every** deployment where a model changed, before
-the new code starts serving. Remember where it sits in the sequence — it is the
+the new code starts serving. Remember where it sits in the sequence, it is the
 single hardest constraint on the rollback strategy, because rolling code back
 does not roll the schema back.
 
@@ -328,7 +328,7 @@ python manage.py seed_demo \
     --demo-users
 ```
 
-Roughly a minute — it attaches 47 photographs. Add `--no-images` for a fast
+Roughly a minute, it attaches 47 photographs. Add `--no-images` for a fast
 re-run, `--flush` to wipe and start over. The command is idempotent, so running
 it twice duplicates nothing.
 
@@ -365,12 +365,12 @@ curl -s http://localhost:8000/api/version/
 curl -s http://localhost:8000/api/products/ | head -c 300
 ```
 
-Open in a Windows browser — WSL2 forwards `localhost` automatically:
+Open in a Windows browser, WSL2 forwards `localhost` automatically:
 
-- <http://localhost:8000/api/docs/> — Swagger UI. The entire backend is
+- <http://localhost:8000/api/docs/>, Swagger UI. The entire backend is
   exercisable here with no frontend at all. This is where most of the
   integration test design in Step 4 comes from.
-- <http://localhost:8000/admin/> — sign in as the administrator.
+- <http://localhost:8000/admin/>, sign in as the administrator.
 
 ### Note the difference between the two health endpoints
 
@@ -406,7 +406,7 @@ npm run dev
 Open <http://localhost:5173>. Products with photographs loading is proof that
 browser → API → database → seeded media all connect.
 
-Grey placeholder boxes mean the SPA is up and the API is not — check terminal
+Grey placeholder boxes mean the SPA is up and the API is not, check terminal
 two.
 
 Vite proxies `/api` and `/media` to `http://localhost:8000`, so the browser
@@ -426,7 +426,7 @@ ls -la dist/ dist/assets/
 npx vite preview --port 4173
 ```
 
-`client/dist/` is the deployable artifact — a folder of static files. There is
+`client/dist/` is the deployable artifact, a folder of static files. There is
 no Node process in production.
 
 Now the important part. Note the hashed bundle filename in `dist/assets/`, then:
@@ -446,23 +446,21 @@ thing you shipped.
 
 `vite preview` reuses the dev proxy, so relative `/api` also works there.
 Watch *where the requests go* in the network tab rather than whether the page
-loads — on a real static server there is no proxy.
+loads, on a real static server there is no proxy.
 
 ---
 
 ## Verification checklist
 
-Everything below passes before Step 1 is done.
-
-- [ ] `psql -h localhost -U rmit -d rmit_store -c "SELECT COUNT(*) FROM catalog_product;"` → 47
-- [ ] `/healthz/` → 200; `/readyz/` → 200
-- [ ] `/readyz/` → 503 with Postgres stopped, 200 again after starting it
-- [ ] `/api/docs/` renders and a `GET /api/products/` from Swagger returns data
-- [ ] `/admin/` accepts `admin@rmit.edu.au`
-- [ ] <http://localhost:5173> shows products **with photographs**
-- [ ] A product page shows image, price, stock and reviews
-- [ ] `npm run build` produces `dist/`, and editing `dist/config.js` redirects the API without changing the bundle hash
-- [ ] `git status --porcelain` shows nothing from `.venv/`, `node_modules/`, `dist/`, `media/`, `staticfiles/`
+- [x] `psql -h localhost -U rmit -d rmit_store -c "SELECT COUNT(*) FROM catalog_product;"` → 47
+- [x] `/healthz/` → 200; `/readyz/` → 200
+- [x] `/readyz/` → 503 with Postgres stopped, 200 again after starting it
+- [x] `/api/docs/` renders and a `GET /api/products/` from Swagger returns data
+- [x] `/admin/` accepts `admin@rmit.edu.au`
+- [x] <http://localhost:5173> shows products **with photographs**
+- [x] A product page shows image, price, stock and reviews
+- [x] `npm run build` produces `dist/`, and editing `dist/config.js` redirects the API without changing the bundle hash
+- [x] `git status --porcelain` shows nothing from `.venv/`, `node_modules/`, `dist/`, `media/`, `staticfiles/`
 
 ---
 
@@ -497,7 +495,7 @@ mapping now because it is the skeleton of the report's requirement sections.
 | §4 `cp .env.example .env` and hand-editing | Secrets injected from SSM / Jenkins credentials, never a file on disk | `ADV-4` |
 | §5 remembering to run `migrate` | An explicit ordered pipeline stage before the new code serves | `REQ-4` |
 | §7 eyeballing `curl` output | The smoke suite, run automatically after every deploy | `REQ-5` |
-| §8 `npm run build` on a laptop | A CI stage on an agent — building on a t3.micro runs it out of memory | `REQ-3`, `REQ-6` |
+| §8 `npm run build` on a laptop | A CI stage on an agent, building on a t3.micro runs it out of memory | `REQ-3`, `REQ-6` |
 | §9 hand-editing `dist/config.js` | Rendered at container start, one artifact promoted unchanged | `REQ-2`, `REQ-4` |
 | `USE_S3=False` writing to local disk | S3 plus an instance role, because replica two 404s on replica one's uploads | `REQ-9`, `ADV-1` |
 
@@ -518,6 +516,6 @@ start the service, run the two `CREATE` statements in *SQL Shell (psql)*
 without the `psql -c` wrapper, and activate the venv with
 `.venv\Scripts\activate`.
 
-**Ansible has no Windows control node** — it is unsupported and does not run.
+**Ansible has no Windows control node**, it is unsupported and does not run.
 Requirement 7 needs WSL or a Linux VM regardless, so §0.1 is the better use of
 the hour.
