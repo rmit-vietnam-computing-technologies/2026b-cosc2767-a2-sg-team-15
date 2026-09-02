@@ -15,8 +15,8 @@ Shared fixtures for the whole suite.
 
 Four roles matter to this application — anonymous, member, merchant and admin —
 because almost every permission decision in the API reads ``User.role``. They
-are defined once here so the authorisation matrix in Step 4 can parametrise
-over them rather than rebuilding users in every module.
+are defined once here so the authorisation matrix can parametrise over them
+rather than rebuilding users in every module.
 """
 
 from decimal import Decimal

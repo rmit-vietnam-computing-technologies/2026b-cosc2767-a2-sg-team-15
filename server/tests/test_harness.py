@@ -62,7 +62,7 @@ def test_database_is_postgresql(db):
 
 @pytest.mark.integration
 def test_row_locking_is_available(db):
-    """Why SQLite is not an option.
+    """[T15-BE-DB][REQ-5] Why SQLite is not an option.
 
     ``apps.orders.services.create_order`` calls
     ``select_for_update(of=("self",))`` to hold a row lock while it checks stock

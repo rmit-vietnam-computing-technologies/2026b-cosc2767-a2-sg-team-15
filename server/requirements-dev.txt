@@ -16,7 +16,7 @@
 # Separate from requirements.txt on purpose. The runtime image must not ship a
 # test runner: it is dead weight in every container and it widens the attack
 # surface of a production process for no benefit. CI installs both files; the
-# Dockerfile in Step 9 installs only requirements.txt.
+# runtime Dockerfile installs only requirements.txt.
 
 -r requirements.txt
 

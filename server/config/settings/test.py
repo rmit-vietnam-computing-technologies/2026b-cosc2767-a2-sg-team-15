@@ -34,8 +34,8 @@ DEBUG = False
 # [T15-BE-HOSTHDR][REQ-5] DRF's APIClient sends Host: testserver. Omit it and
 # every request fails with DisallowedHost before reaching a view — which is
 # also exactly how ALLOWED_HOSTS misconfiguration fails behind a load
-# balancer. The Step 5 tests assert that behaviour deliberately by overriding
-# this list per-test.
+# balancer. The configuration-failure tests assert that behaviour deliberately
+# by overriding this list per-test.
 ALLOWED_HOSTS = ["testserver", "localhost", "127.0.0.1"]
 
 # [T15-BE-TEST] Weak hashing, on purpose and only here.
@@ -52,8 +52,8 @@ EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 
 # [T15-BE-TEST][REQ-5] Throttling off.
 #
-# base.py throttles auth at 20/min. The authorisation matrix in Step 4 fires
-# far more than 20 requests, so with throttling on the suite fails
+# base.py throttles auth at 20/min. The authorisation matrix fires far more
+# than 20 requests, so with throttling on the suite fails
 # intermittently and in an order-dependent way — the worst kind of flake,
 # because it looks like a permissions bug. Throttle behaviour gets its own
 # test that re-enables the rate explicitly.
