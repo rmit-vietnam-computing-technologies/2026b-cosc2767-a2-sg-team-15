@@ -28,3 +28,4 @@ django-storages[s3]>=1.14,<2.0
 
 # WSGI server for anything that is not `manage.py runserver`.
 gunicorn>=22.0
+django-prometheus>=2.3,<3.0
