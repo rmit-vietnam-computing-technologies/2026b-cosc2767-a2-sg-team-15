@@ -448,6 +448,91 @@ thing you shipped.
 Watch *where the requests go* in the network tab rather than whether the page
 loads, on a real static server there is no proxy.
 
+
+## 10. Run the test suite
+
+### Install the test dependencies
+
+```bash
+cd ~/work/2026b-cosc2767-a2-sg-team-15/server
+source .venv/bin/activate
+pip install -r requirements-dev.txt
+```
+
+Separate from `requirements.txt` on purpose: the runtime container must not
+ship a test runner.
+
+### Run everything
+
+```bash
+pytest
+```
+
+Postgres has to be running. The suite creates and drops a `test_rmit_store`
+database alongside your development one — your seeded data is untouched.
+
+```
+tests/test_harness.py .......                                  [100%]
+7 passed
+```
+
+The first run applies every migration to the fresh test database, so give it
+20–30 seconds. After that:
+
+```bash
+pytest --reuse-db          # keeps test_rmit_store between runs
+```
+
+Drop `--reuse-db` after any migration, or the schema goes stale and you get
+failures that look convincingly like model bugs. `--create-db` forces a rebuild.
+
+### Run a subset
+
+```bash
+pytest -m unit                     # pure functions, no database, near-instant
+pytest -m integration              # API and database together
+pytest tests/unit/test_payments.py -k luhn
+pytest -x --lf                     # stop at first failure, then rerun only it
+```
+
+Smoke tests are excluded by default — `pytest.ini` carries `-m "not smoke"`,
+because they need a deployed URL and would fail on a laptop with nothing
+running. Run them explicitly:
+
+```bash
+SMOKE_BASE_URL=http://localhost:8000 pytest -m smoke
+```
+
+### Where the reports go
+
+Every run writes `server/test-reports/`:
+
+| File | Consumed by |
+|---|---|
+| `junit.xml` | Jenkins JUnit publisher, for per-test results and trends |
+| `coverage.xml` | Jenkins Cobertura plugin, for line and branch coverage |
+
+Both are build output and must never be committed. They are written on every
+run rather than behind a CI-only flag, so the command a developer types is the
+command the agent runs.
+
+For something browsable:
+
+```bash
+pytest --cov-report=html && xdg-open htmlcov/index.html
+```
+
+### Test-suite troubleshooting
+
+| Symptom | Cause and fix |
+|---|---|
+| `connection to server at "127.0.0.1", port 5432 failed` | Postgres is down. `sudo service postgresql start`, then `pg_isready -h localhost`. |
+| `permission denied to create database` | The `rmit` role lacks `CREATEDB`. `sudo -u postgres psql -c "ALTER ROLE rmit CREATEDB;"` |
+| `database "test_rmit_store" already exists` | A previous run was killed mid-flight. `pytest --create-db`. |
+| Failures that look like missing columns | Stale reused test database after a migration. `pytest --create-db`. |
+| `'unit' not found in markers configuration` | Wrong working directory, so `pytest.ini` was never read. `cd server` first. |
+| Green locally, red in CI later | Python version drift. See the note in §2. |
+
 ---
 
 ## Verification checklist
@@ -461,6 +546,8 @@ loads, on a real static server there is no proxy.
 - [x] A product page shows image, price, stock and reviews
 - [x] `npm run build` produces `dist/`, and editing `dist/config.js` redirects the API without changing the bundle hash
 - [x] `git status --porcelain` shows nothing from `.venv/`, `node_modules/`, `dist/`, `media/`, `staticfiles/`
+- [x] `pytest` from `server/` reports 7 passed
+- [x] `server/test-reports/junit.xml` and `coverage.xml` exist and are gitignored
 
 ---
 

@@ -69,6 +69,27 @@ node_modules/
 client/dist/
 .npm
 *.tsbuildinfo
+client/node_modules/
+server/.venv/
+server/staticfiles/*
+!server/staticfiles/.gitkeep
+
+# ---------------------------------------------------------------------------
+# [T15-BE-TEST] Test and coverage output
+#
+# Generated per build and published by Jenkins from the workspace. A committed
+# report is a stale number outliving the code it measured.
+# ---------------------------------------------------------------------------
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+*.cover
+test-reports/
+test-results/
+playwright-report/
+
 
 # ---------------------------------------------------------
 # Environment files and credentials

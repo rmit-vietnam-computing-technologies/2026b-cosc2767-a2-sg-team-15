@@ -1,0 +1,40 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Vo Hoang Khanh
+# ID: s3926310
+# Created  date: 02/09/2026
+# Last modified: 02/09/2026
+# Acknowledgement: Drafted with Claude (Anthropic) in a guided session; the
+#   author reviewed and verified the resulting report. Reference:
+#   coverage.py configuration reference, https://coverage.readthedocs.io/en/latest/config.html
+
+# [T15-BE-TEST][REQ-5] What counts as covered.
+#
+# Measuring only apps/ keeps the number honest. Including migrations and
+# settings inflates it with code that is either generated or executed by the
+# act of starting up, which makes the figure look good and mean nothing.
+
+[run]
+source = apps
+branch = True
+omit =
+    */migrations/*
+    */tests/*
+    */__init__.py
+    */apps.py
+    */admin.py
+
+[report]
+show_missing = True
+skip_covered = True
+precision = 1
+exclude_lines =
+    pragma: no cover
+    if TYPE_CHECKING:
+    raise NotImplementedError
+    if __name__ == .__main__.:
+
+[xml]
+output = test-reports/coverage.xml
