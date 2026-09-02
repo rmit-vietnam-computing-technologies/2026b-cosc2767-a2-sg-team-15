@@ -145,6 +145,33 @@ def merchant(db, merchant_brand):
 
 
 @pytest.fixture
+def rival_merchant(db):
+    """[REQ-5] A second approved seller, with a brand of their own.
+
+    Exists so the queryset-scoping tests have somebody else's object to ask
+    for. One merchant proves a seller can reach their own products; it takes
+    two to prove a seller cannot reach anyone else's.
+    """
+    brand = Brand.objects.create(name="Rival Brand")
+    record = Merchant.objects.create(
+        name="Rival Merchant",
+        email="rival@test.local",
+        brand_name="Rival Brand",
+        status=MerchantStatus.APPROVED,
+        is_active=True,
+        brand=brand,
+    )
+    user = User.objects.create_user(
+        email="rival@test.local",
+        password="RivalPass123!",
+        role=Role.MERCHANT,
+    )
+    user.merchant = record
+    user.save(update_fields=["merchant"])
+    return user
+
+
+@pytest.fixture
 def deactivated_merchant(db):
     """[REQ-5] A seller whose approval was withdrawn.
 
@@ -242,3 +269,66 @@ def approved_card():
 def declined_card():
     """A generic decline. Leaves no order behind and takes no stock."""
     return "4000000000000002"
+
+
+@pytest.fixture
+def card_payload(approved_card):
+    """Factory: a complete, valid card body for the checkout endpoint.
+
+        card_payload()                       an approved Visa
+        card_payload(declined_card)          a decline
+        card_payload(exp_year=2020)          an expiry the serializer rejects
+
+    The expiry is deliberately far out. PaymentSerializer refuses a past date,
+    so a card fixed at next year would start failing the suite on a date
+    nobody chose — the same silent rot freezegun exists to prevent in the
+    unit tests.
+    """
+
+    def _card_payload(number=None, **overrides):
+        payload = {
+            "number": number or approved_card,
+            "exp_month": 12,
+            "exp_year": 2099,
+            # Three digits: correct for Visa and Mastercard. Amex needs four,
+            # which PaymentSerializer derives from the number itself.
+            "cvc": "123",
+            "name_on_card": "Test Shopper",
+        }
+        payload.update(overrides)
+        return payload
+
+    return _card_payload
+
+
+# --------------------------------------------------------------------------
+# Checkout
+# --------------------------------------------------------------------------
+
+
+@pytest.fixture
+def checkout(as_user, card_payload):
+    """Factory: place an order as a user.
+
+        response = checkout(member, [(product, 2)])
+        response = checkout(member, [(product, 1)], number=declined_card)
+
+    Posts through the real endpoint rather than calling ``create_order``
+    directly. That is the whole point of an integration test here: the
+    serializer, the permission class, the service layer, the transaction and
+    the database all have to agree, and calling the service in isolation
+    would skip four of the five.
+    """
+
+    def _checkout(user, lines, number=None, **extra):
+        body = {
+            "items": [
+                {"product": product.pk, "quantity": quantity}
+                for product, quantity in lines
+            ],
+            "payment": card_payload(number),
+        }
+        body.update(extra)
+        return as_user(user).post("/api/orders/", body, format="json")
+
+    return _checkout
