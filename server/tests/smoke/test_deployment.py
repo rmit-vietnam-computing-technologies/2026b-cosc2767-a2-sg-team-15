@@ -16,6 +16,18 @@
 """
 [T15-BE-TEST][REQ-5][REQ-4] Deployment smoke tests: the API tier.
 
+The brief calls these "the cheapest and most valuable tests in the whole
+pipeline", and it is right. Every assertion here fails for a reason no amount
+of unit or integration testing can catch, because each one is a property of a
+*deployment* rather than of the code: an environment variable that was never
+set, a migration that did not run, a ``collectstatic`` that was skipped, a
+database the container cannot reach, a proxy rewriting a header.
+
+They are also what makes automated rollback possible. A deploy that passes
+its smoke suite is promoted; one that fails is rolled back before it takes
+traffic, and the previous version keeps serving. That decision needs a check
+that runs in seconds against the real thing, from outside it.
+
 Ordering is deliberate: liveness, then readiness, then identity, then
 behaviour. A failure in the first group makes every later failure
 meaningless, so read the first red line and ignore the rest.
@@ -222,10 +234,20 @@ def test_debug_mode_is_off(http, base_url):
 
     Detected by asking for a path that cannot exist and looking for the
     fingerprint of the debug page rather than the plain 404.
-    """
-    response = http.get(f"{base_url}/this-path-does-not-exist-smoke-probe/")
 
-    assert response.status_code == 404
+    The probe sits under /api/ deliberately. Behind nginx, an unknown path at
+    the root is not a 404 at all — `try_files $uri $uri/ /index.html` treats
+    it as a Vue route and answers 200 with the SPA, which is correct and is
+    what test_a_client_route_falls_back_to_the_spa asserts. Only the prefixes
+    nginx proxies reach Django, so a root-level probe tests the web server's
+    fallback rather than Django's debug setting.
+    """
+    response = http.get(f"{base_url}/api/this-path-does-not-exist-smoke-probe/")
+
+    assert response.status_code == 404, (
+        f"expected 404 from Django, got {response.status_code} — is /api/ "
+        "actually proxied to the application?"
+    )
     body = response.text.lower()
     for fingerprint in ("using the urlconf defined in", "django settings module"):
         assert fingerprint not in body, (

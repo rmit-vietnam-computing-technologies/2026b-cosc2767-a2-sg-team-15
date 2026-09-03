@@ -37,14 +37,9 @@ Every command assumes you are in `server/` with the virtualenv active.
 | `pytest -m smoke --no-cov` | 23 checks against a deployed URL | ~3s |
 | `pytest --cov-fail-under=65` | the full suite plus the coverage gate — what CI runs | ~10s |
 
-345 tests in total. `slow` (7) is a subset of `integration`, not a fifth
-category, so the numbers do not sum to 345 by design.
-
 ---
 
 ## Before anything runs
-
-Two mistakes account for almost every confusing failure.
 
 **Be in `server/`.** `pytest.ini` lives there, and pytest finds its config by
 walking up from wherever you invoke it. Run from the repository root and it
@@ -64,10 +59,6 @@ source .venv/bin/activate
 sudo service postgresql start
 ```
 
-PostgreSQL does not survive a reboot under WSL2 without systemd, so that
-third line is needed more often than you would expect. Everything except
-`-m unit` needs it.
-
 First time on a machine:
 
 ```bash
@@ -77,7 +68,7 @@ pip install -r requirements-dev.txt
 
 ---
 
-## The everyday loop
+## Test loop
 
 ```bash
 pytest
@@ -268,7 +259,7 @@ SMOKE_MEMBER_PASSWORD='DemoPass2767!' \
 pytest -m smoke --no-cov
 ```
 
-Two traps, both found the hard way:
+Warning:
 
 **`collectstatic` must use the same settings module as the server.** Dev uses
 `StaticFilesStorage`; prod uses whitenoise's manifest storage and needs
