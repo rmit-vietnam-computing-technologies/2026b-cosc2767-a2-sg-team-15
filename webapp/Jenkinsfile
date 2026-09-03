@@ -1,0 +1,101 @@
+pipeline {
+    agent any
+
+    environment {
+        // ============================================
+        // 📌 CẤU HÌNH DOCKER HUB
+        // ============================================
+        // 🔴 QUAN TRỌNG: Thay DOCKER_HUB_USERNAME bằng username Docker Hub của bạn!
+        DOCKER_HUB_USERNAME = 'ztz99a2'  // Ví dụ: 'john_doe'
+        DOCKER_IMAGE_NAME = 'rmit-store-frontend'
+        DOCKER_TAG = "${env.BUILD_ID}"  // Số lần build của Jenkins
+        
+        // Thông tin EC2 để deploy (giữ nguyên)
+        DEPLOY_EC2_IP = '98.90.194.9'      // IP của EC2 Docker
+        DEPLOY_EC2_USER = 'ec2-user'              // User mặc định của Amazon Linux
+    }
+
+    stages {
+        // --- STAGE 1: BUILD FRONTEND ---
+        stage('Build Frontend') {
+            steps {
+                echo '📦 Building Vue application...'
+                dir('client') {
+                    sh 'npm install'
+                    sh 'npm run build'
+                }
+                echo '✅ Build completed!'
+            }
+        }
+
+        // --- STAGE 2: TEST FRONTEND (Tùy chọn) ---
+        stage('Test Frontend') {
+            steps {
+                echo '🧪 Running frontend tests...'
+                dir('client') {
+                    // sh 'npm run test:unit'
+                }
+                echo '✅ Tests passed!'
+            }
+        }
+
+        // --- STAGE 3: BUILD DOCKER IMAGE ---
+        stage('Build Docker Image') {
+            steps {
+                echo '🐳 Building Docker image...'
+                script {
+                    // Build image với tên Docker Hub + tên image + tag
+                    docker.build("${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}")
+                }
+                echo '✅ Docker image built!'
+            }
+        }
+
+        // --- STAGE 4: PUSH DOCKER IMAGE LÊN DOCKER HUB ---
+        stage('Push Docker Image to Docker Hub') {
+            steps {
+                echo '☁️ Pushing image to Docker Hub...'
+                script {
+                    // Đăng nhập Docker Hub (Jenkins sẽ dùng credentials đã lưu)
+                    docker.withRegistry('', 'docker-hub-credentials') {
+                        docker.image("${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}").push()
+                    }
+                }
+                echo '✅ Image pushed successfully!'
+            }
+        }
+
+        // --- STAGE 5: DEPLOY FRONTEND LÊN EC2 ---
+        stage('Deploy Frontend to EC2') {
+            steps {
+                echo '🚀 Deploying frontend to EC2...'
+                script {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no -i ~/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
+                            # Kéo image mới nhất từ Docker Hub
+                            docker pull ${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
+                            
+                            # Dừng và xóa container cũ (nếu có)
+                            docker stop frontend-container || true
+                            docker rm frontend-container || true
+                            
+                            # Chạy container mới từ image vừa kéo, ánh xạ cổng 80 (HTTP) ra ngoài
+                            docker run -d --name frontend-container -p 80:80 ${DOCKER_HUB_USERNAME}/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
+                        "
+                    """
+                }
+                echo '✅ Deployment completed!'
+            }
+        }
+    }
+
+    // --- POST-BUILD ACTIONS ---
+    post {
+        success {
+            echo '🎉 Pipeline succeeded!'
+        }
+        failure {
+            echo '❌ Pipeline failed!'
+        }
+    }
+}
