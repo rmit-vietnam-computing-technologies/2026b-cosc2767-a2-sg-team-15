@@ -48,6 +48,7 @@ pipeline {
                             webapp/client/public/config.js \
                             webapp/client/Dockerfile \
                             ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP}:/home/ec2-user/client/
+
                     """
                 }
                 echo 'Frontend code copied'
