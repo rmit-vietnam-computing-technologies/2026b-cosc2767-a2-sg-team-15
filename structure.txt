@@ -1,0 +1,388 @@
+Folder PATH listing for volume Windows 10
+Volume serial number is 0F8C-0650
+C:.
+³   .gitignore
+³   README.md
+³   structure.txt
+³   
+ÃÄÄÄ.github
+³       PULL_REQUEST_TEMPLATE.md
+³       
+ÃÄÄÄassets
+³       aws-keys-howto.png
+³       
+ÃÄÄÄterraform
+³   ÀÄÄÄaws-individual
+³       ³   .gitignore
+³       ³   main.tf
+³       ³   outputs.tf
+³       ³   README.md
+³       ³   terraform.tfvars.example
+³       ³   test-plan
+³       ³   variables.tf
+³       ³   
+³       ÃÄÄÄansible
+³       ³   ³   ansible.cfg
+³       ³   ³   inventory.ini
+³       ³   ³   playbook.yml
+³       ³   ³   setup-jenkins.yml
+³       ³   ³   setup-main.yml
+³       ³   ³   
+³       ³   ÀÄÄÄtemplates
+³       ³           jenkins-nginx.conf.j2
+³       ³           
+³       ÀÄÄÄmodules
+³           ÃÄÄÄec2
+³           ³       main.tf
+³           ³       outputs.tf
+³           ³       variables.tf
+³           ³       
+³           ÀÄÄÄvpc
+³                   main.tf
+³                   outputs.tf
+³                   
+ÀÄÄÄwebapp
+    ³   .gitignore
+    ³   Jenkinsfile
+    ³   README.md
+    ³   
+    ÃÄÄÄclient
+    ³   ³   .env.example
+    ³   ³   Dockerfile
+    ³   ³   index.html
+    ³   ³   package-lock.json
+    ³   ³   package.json
+    ³   ³   vite.config.js
+    ³   ³   
+    ³   ÃÄÄÄpublic
+    ³   ³   ³   config.js
+    ³   ³   ³   
+    ³   ³   ÀÄÄÄimages
+    ³   ³       ³   arrow-right.svg
+    ³   ³       ³   bag.svg
+    ³   ³       ³   chevron-down.svg
+    ³   ³       ³   close.svg
+    ³   ³       ³   favicon.png
+    ³   ³       ³   placeholder-image.png
+    ³   ³       ³   rmit-store-logo.png
+    ³   ³       ³   
+    ³   ³       ÃÄÄÄbanners
+    ³   ³       ³       agreement.svg
+    ³   ³       ³       banner-1.jpg
+    ³   ³       ³       banner-2.png
+    ³   ³       ³       banner-3.jpg
+    ³   ³       ³       
+    ³   ³       ÀÄÄÄsocial-icons
+    ³   ³               facebook.svg
+    ³   ³               instagram.svg
+    ³   ³               pinterest.svg
+    ³   ³               twitter.svg
+    ³   ³               
+    ³   ÀÄÄÄsrc
+    ³       ³   App.vue
+    ³       ³   config.js
+    ³       ³   main.js
+    ³       ³   
+    ³       ÃÄÄÄapi
+    ³       ³       http.js
+    ³       ³       index.js
+    ³       ³       
+    ³       ÃÄÄÄcomponents
+    ³       ³   ÃÄÄÄcommon
+    ³       ³   ³       AppIcon.vue
+    ³       ³   ³       BaseDrawer.vue
+    ³       ³   ³       LoadingIndicator.vue
+    ³       ³   ³       PaginationBar.vue
+    ³       ³   ³       SearchAutosuggest.vue
+    ³       ³   ³       StarRating.vue
+    ³       ³   ³       ToastHost.vue
+    ³       ³   ³       
+    ³       ³   ÃÄÄÄdashboard
+    ³       ³   ³       SubPage.vue
+    ³       ³   ³       
+    ³       ³   ÃÄÄÄlayout
+    ³       ³   ³       AppFooter.vue
+    ³       ³   ³       AppHeader.vue
+    ³       ³   ³       
+    ³       ³   ÀÄÄÄstore
+    ³       ³           CartDrawer.vue
+    ³       ³           MenuDrawer.vue
+    ³       ³           PaymentForm.vue
+    ³       ³           ProductCard.vue
+    ³       ³           ProductFilter.vue
+    ³       ³           ReviewForm.vue
+    ³       ³           ReviewList.vue
+    ³       ³           ReviewSummary.vue
+    ³       ³           
+    ³       ÃÄÄÄcomposables
+    ³       ³       useDebounce.js
+    ³       ³       
+    ³       ÃÄÄÄrouter
+    ³       ³       index.js
+    ³       ³       
+    ³       ÃÄÄÄstores
+    ³       ³       addresses.js
+    ³       ³       auth.js
+    ³       ³       cart.js
+    ³       ³       catalog.js
+    ³       ³       manage.js
+    ³       ³       orders.js
+    ³       ³       reviews.js
+    ³       ³       ui.js
+    ³       ³       wishlist.js
+    ³       ³       
+    ³       ÃÄÄÄstyles
+    ³       ³       main.scss
+    ³       ³       _variables.scss
+    ³       ³       
+    ³       ÃÄÄÄutils
+    ³       ³       format.js
+    ³       ³       
+    ³       ÀÄÄÄviews
+    ³           ³   BrandsView.vue
+    ³           ³   ContactView.vue
+    ³           ³   HomeView.vue
+    ³           ³   NotFoundView.vue
+    ³           ³   ProductView.vue
+    ³           ³   SellView.vue
+    ³           ³   
+    ³           ÃÄÄÄauth
+    ³           ³       ForgotPasswordView.vue
+    ³           ³       LoginView.vue
+    ³           ³       MerchantSignupView.vue
+    ³           ³       RegisterView.vue
+    ³           ³       ResetPasswordView.vue
+    ³           ³       
+    ³           ÃÄÄÄdashboard
+    ³           ³       AccountDetails.vue
+    ³           ³       AccountSecurity.vue
+    ³           ³       AddressForm.vue
+    ³           ³       AddressList.vue
+    ³           ³       BrandForm.vue
+    ³           ³       BrandList.vue
+    ³           ³       CategoryForm.vue
+    ³           ³       CategoryList.vue
+    ³           ³       DashboardLayout.vue
+    ³           ³       MerchantList.vue
+    ³           ³       OrderList.vue
+    ³           ³       ProductForm.vue
+    ³           ³       ProductList.vue
+    ³           ³       ReviewList.vue
+    ³           ³       UserList.vue
+    ³           ³       WishlistPanel.vue
+    ³           ³       
+    ³           ÃÄÄÄorder
+    ³           ³       OrderDetailView.vue
+    ³           ³       OrderSuccessView.vue
+    ³           ³       
+    ³           ÀÄÄÄshop
+    ³                   ShopView.vue
+    ³                   
+    ÃÄÄÄscreenshots
+    ³       account-dashboard.png
+    ³       admin-orders.png
+    ³       admin-products.png
+    ³       admin-review-moderation.png
+    ³       admin-sellers.png
+    ³       cart-drawer.png
+    ³       checkout-card-form.png
+    ³       django-admin-login.png
+    ³       django-admin.png
+    ³       homepage.png
+    ³       login.png
+    ³       merchant-products.png
+    ³       order-confirmation.png
+    ³       order-detail.png
+    ³       order-history.png
+    ³       payment-declined.png
+    ³       product-page.png
+    ³       product-reviews.png
+    ³       register.png
+    ³       seller-application.png
+    ³       shop-catalogue.png
+    ³       swagger-ui.png
+    ³       wishlist.png
+    ³       
+    ÀÄÄÄserver
+        ³   .env.example
+        ³   manage.py
+        ³   requirements.txt
+        ³   
+        ÃÄÄÄapps
+        ³   ³   __init__.py
+        ³   ³   
+        ³   ÃÄÄÄaccounts
+        ³   ³   ³   admin.py
+        ³   ³   ³   apps.py
+        ³   ³   ³   models.py
+        ³   ³   ³   serializers.py
+        ³   ³   ³   urls.py
+        ³   ³   ³   urls_auth.py
+        ³   ³   ³   views.py
+        ³   ³   ³   __init__.py
+        ³   ³   ³   
+        ³   ³   ÀÄÄÄmigrations
+        ³   ³           0001_initial.py
+        ³   ³           __init__.py
+        ³   ³           
+        ³   ÃÄÄÄcatalog
+        ³   ³   ³   admin.py
+        ³   ³   ³   apps.py
+        ³   ³   ³   models.py
+        ³   ³   ³   serializers.py
+        ³   ³   ³   services.py
+        ³   ³   ³   urls.py
+        ³   ³   ³   views.py
+        ³   ³   ³   __init__.py
+        ³   ³   ³   
+        ³   ³   ÀÄÄÄmigrations
+        ³   ³           0001_initial.py
+        ³   ³           __init__.py
+        ³   ³           
+        ³   ÃÄÄÄcore
+        ³   ³   ³   admin.py
+        ³   ³   ³   apps.py
+        ³   ³   ³   emails.py
+        ³   ³   ³   exceptions.py
+        ³   ³   ³   models.py
+        ³   ³   ³   pagination.py
+        ³   ³   ³   permissions.py
+        ³   ³   ³   serializers.py
+        ³   ³   ³   urls.py
+        ³   ³   ³   views.py
+        ³   ³   ³   __init__.py
+        ³   ³   ³   
+        ³   ³   ÃÄÄÄmanagement
+        ³   ³   ³   ³   __init__.py
+        ³   ³   ³   ³   
+        ³   ³   ³   ÀÄÄÄcommands
+        ³   ³   ³           create_admin.py
+        ³   ³   ³           seed_demo.py
+        ³   ³   ³           _seed_catalog.py
+        ³   ³   ³           __init__.py
+        ³   ³   ³           
+        ³   ³   ÀÄÄÄmigrations
+        ³   ³           0001_initial.py
+        ³   ³           __init__.py
+        ³   ³           
+        ³   ÃÄÄÄmerchants
+        ³   ³   ³   admin.py
+        ³   ³   ³   apps.py
+        ³   ³   ³   models.py
+        ³   ³   ³   serializers.py
+        ³   ³   ³   services.py
+        ³   ³   ³   urls.py
+        ³   ³   ³   views.py
+        ³   ³   ³   __init__.py
+        ³   ³   ³   
+        ³   ³   ÀÄÄÄmigrations
+        ³   ³           0001_initial.py
+        ³   ³           __init__.py
+        ³   ³           
+        ³   ÃÄÄÄorders
+        ³   ³   ³   admin.py
+        ³   ³   ³   apps.py
+        ³   ³   ³   models.py
+        ³   ³   ³   payments.py
+        ³   ³   ³   serializers.py
+        ³   ³   ³   services.py
+        ³   ³   ³   urls.py
+        ³   ³   ³   views.py
+        ³   ³   ³   __init__.py
+        ³   ³   ³   
+        ³   ³   ÀÄÄÄmigrations
+        ³   ³           0001_initial.py
+        ³   ³           0002_order_card_brand_order_card_last4_and_more.py
+        ³   ³           __init__.py
+        ³   ³           
+        ³   ÀÄÄÄreviews
+        ³       ³   admin.py
+        ³       ³   apps.py
+        ³       ³   models.py
+        ³       ³   serializers.py
+        ³       ³   urls.py
+        ³       ³   views.py
+        ³       ³   __init__.py
+        ³       ³   
+        ³       ÀÄÄÄmigrations
+        ³               0001_initial.py
+        ³               __init__.py
+        ³               
+        ÃÄÄÄconfig
+        ³   ³   asgi.py
+        ³   ³   urls.py
+        ³   ³   wsgi.py
+        ³   ³   __init__.py
+        ³   ³   
+        ³   ÀÄÄÄsettings
+        ³           base.py
+        ³           dev.py
+        ³           prod.py
+        ³           __init__.py
+        ³           
+        ÃÄÄÄseed_assets
+        ³   ÀÄÄÄproducts
+        ³           p-1.jpg
+        ³           p-10.jpg
+        ³           p-11.jpg
+        ³           p-12.jpg
+        ³           p-13.jpg
+        ³           p-14.jpg
+        ³           p-15.jpg
+        ³           p-16.jpg
+        ³           p-17.jpg
+        ³           p-18.jpg
+        ³           p-19.jpg
+        ³           p-2.jpg
+        ³           p-20.jpg
+        ³           p-21.jpg
+        ³           p-22.jpg
+        ³           p-23.jpg
+        ³           p-24.jpg
+        ³           p-25.jpg
+        ³           p-26.jpg
+        ³           p-27.jpg
+        ³           p-28.jpg
+        ³           p-29.jpg
+        ³           p-3.jpg
+        ³           p-30.jpg
+        ³           p-31.jpg
+        ³           p-32.jpg
+        ³           p-33.jpg
+        ³           p-34.jpg
+        ³           p-35.jpg
+        ³           p-36.jpg
+        ³           p-37.jpg
+        ³           p-38.jpg
+        ³           p-39.jpg
+        ³           p-4.jpg
+        ³           p-40.jpg
+        ³           p-41.jpg
+        ³           p-42.jpg
+        ³           p-43.jpg
+        ³           p-44.jpg
+        ³           p-45.jpg
+        ³           p-46.jpg
+        ³           p-47.jpg
+        ³           p-5.jpg
+        ³           p-6.jpg
+        ³           p-7.jpg
+        ³           p-8.jpg
+        ³           p-9.jpg
+        ³           
+        ÃÄÄÄstaticfiles
+        ³       .gitkeep
+        ³       
+        ÀÄÄÄtemplates
+            ÀÄÄÄemail
+                    contact.txt
+                    merchant_application.txt
+                    merchant_deactivate_account.txt
+                    merchant_signup.txt
+                    merchant_welcome.txt
+                    newsletter_subscription.txt
+                    order_confirmation.txt
+                    password_reset.txt
+                    password_reset_confirmation.txt
+                    signup.txt
+                    
