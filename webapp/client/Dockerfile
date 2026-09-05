@@ -6,7 +6,7 @@ FROM nginx:alpine
 COPY dist /usr/share/nginx/html
 
 # Copy runtime config of compiled Vue into current container
-COPY public/config.js /usr/share/nginx/html/config.js
+COPY config.js /usr/share/nginx/html/config.js
 
 # Configure Ngix in order for Ngix to listen in on Port 80, configure the default webpage access of html folder. /dist already has a index.html file so It will find it there
 RUN echo 'server { \ 
