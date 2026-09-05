@@ -106,8 +106,8 @@ pipeline {
                     sh """
                         ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
                             # Stop running containers
-                            sudo docker stop frontend-container 
-                            sudo docker rm frontend-container 
+                            sudo docker stop frontend-container || true
+                            sudo docker rm frontend-container || true
                             
                             # Run new containers
                             sudo docker run -d \\
