@@ -1,0 +1,87 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Vo Hoang Khanh
+# ID: s3926310
+# Created  date: 03/09/2026
+# Last modified: 03/09/2026
+# Acknowledgement: The steps automated here are the manual ones recorded in
+#   docs/runbooks/plan-b-ec2.md, which were performed by hand first.
+#   Reference: Ansible playbook guide,
+#   https://docs.ansible.com/ansible/latest/playbook_guide/index.html
+
+---
+# [T15-BE-ANSIBLE][REQ-7] Split-tier deployment.
+#
+# Plan B put the SPA, the API and the database on one instance behind one
+# nginx. This splits them onto two, and automates every step the Plan B
+# runbook performs by hand.
+#
+#     ansible-playbook -i inventory.ini site.yml
+#
+# Ordering matters and is expressed by the play order below: the database
+# must accept connections before migrations run, and the API must answer
+# /healthz/ before the web tier is told to proxy to it. Ansible runs plays
+# top to bottom, so this file *is* the dependency graph.
+#
+# Run it twice. The second run should report zero changed tasks -- that is
+# the property that distinguishes configuration management from a shell
+# script, and it is what lets a failed deploy be retried rather than
+# unpicked.
+
+- name: Base configuration common to every instance
+  hosts: all
+  become: true
+  roles:
+    - common
+
+- name: Database tier
+  hosts: api
+  become: true
+  roles:
+    - role: database
+      when: db_host == "localhost"
+  tags: [database]
+
+- name: API tier
+  hosts: api
+  become: true
+  roles:
+    - api
+  tags: [api]
+
+- name: Web tier
+  hosts: web
+  become: true
+  roles:
+    - web
+  tags: [web]
+
+- name: Verify the deployment answers
+  hosts: web
+  gather_facts: false
+  tags: [verify]
+  tasks:
+    # A deploy that finishes without error has not necessarily produced a
+    # working site. This is the cheapest possible proof that it did, and it
+    # runs against the public address rather than localhost so it exercises
+    # the same path a browser takes.
+    - name: Wait for the storefront to answer
+      ansible.builtin.uri:
+        url: "http://{{ web_public_ip }}/healthz/"
+        status_code: 200
+      retries: 10
+      delay: 3
+      register: verify_healthz
+      until: verify_healthz is succeeded
+      delegate_to: localhost
+      become: false
+
+    - name: Report where to point the smoke suite
+      ansible.builtin.debug:
+        msg: >-
+          Deployed. Now run, from a laptop:
+          SMOKE_BASE_URL=http://{{ web_public_ip }}
+          SMOKE_SPA_BASE_URL=http://{{ web_public_ip }}
+          pytest -m smoke --no-cov

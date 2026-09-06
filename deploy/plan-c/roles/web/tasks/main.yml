@@ -1,0 +1,111 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Vo Hoang Khanh
+# ID: s3926310
+# Created  date: 03/09/2026
+# Last modified: 03/09/2026
+# Acknowledgement: Automates section 5.1 of docs/runbooks/plan-b-ec2.md.
+#   Reference: ansible.builtin.npm,
+#   https://docs.ansible.com/ansible/latest/collections/community/general/npm_module.html
+
+---
+# [T15-BE-ANSIBLE][REQ-7] The web tier: the SPA and the public entry point.
+#
+# The only instance with a route from the internet. It serves the built
+# bundle from disk and proxies everything Django-shaped to the API instance's
+# private address.
+
+- name: Download the NodeSource setup script
+  ansible.builtin.get_url:
+    url: https://rpm.nodesource.com/setup_22.x
+    dest: /tmp/nodesource_setup.sh
+    owner: root
+    group: root
+    mode: "0700"
+
+# `curl | bash` is the vendor's documented one-liner, but it hides the script
+# from review, cannot be made idempotent, and masks a failed download as a
+# successful no-op because only the last exit code in the pipe survives.
+# Downloading first and then running with `creates:` fixes all three.
+- name: Register the NodeSource repository
+  ansible.builtin.command:
+    cmd: /tmp/nodesource_setup.sh
+    creates: /etc/yum.repos.d/nodesource-nodejs.repo
+
+- name: Install Node.js
+  ansible.builtin.dnf:
+    name: nodejs
+    state: present
+
+- name: Deploy the application source
+  ansible.builtin.git:
+    repo: "{{ repo_url }}"
+    dest: "{{ app_root }}"
+    version: "{{ repo_version }}"
+    accept_hostkey: true
+  become: true
+  become_user: "{{ app_user }}"
+  register: web_checkout
+
+- name: Install frontend dependencies
+  community.general.npm:
+    path: "{{ app_root }}/client"
+    ci: true
+  become: true
+  become_user: "{{ app_user }}"
+
+# The build runs here because Plan C has no CI yet. It is the wrong place and
+# Plan F moves it: it needs Node, which nothing else on this tier needs at
+# runtime, and on a 1 GB instance it is the step that runs the box out of
+# memory. Building once in a pipeline and shipping the artifact is the whole
+# argument, and this task is the evidence for it.
+- name: Build the SPA bundle
+  ansible.builtin.command:
+    cmd: npm run build
+    chdir: "{{ app_root }}/client"
+    creates: "{{ app_root }}/client/dist/index.html"
+  become: true
+  become_user: "{{ app_user }}"
+  register: web_build
+
+- name: Publish the bundle to the web root
+  ansible.builtin.copy:
+    src: "{{ app_root }}/client/dist/"
+    dest: /usr/share/nginx/html/
+    remote_src: true
+    owner: root
+    group: root
+    mode: "0644"
+    directory_mode: "0755"
+
+# [T15-FE-CONFIG][REQ-2] Runtime configuration, written after the bundle.
+#
+# Order matters: the copy above would overwrite this with the file from
+# dist/. Templating it afterwards is what makes one built artifact promotable
+# between environments without a rebuild -- the property the whole runtime
+# config design exists to provide.
+- name: Template the runtime configuration
+  ansible.builtin.template:
+    src: config.js.j2
+    dest: /usr/share/nginx/html/config.js
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install the storefront site configuration
+  ansible.builtin.template:
+    src: web-nginx.conf.j2
+    dest: /etc/nginx/conf.d/rmit-store.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload nginx
+
+- name: Validate the nginx configuration
+  ansible.builtin.command: nginx -t
+  changed_when: false
+
+- name: Flush handlers so the verification below sees the new configuration
+  ansible.builtin.meta: flush_handlers

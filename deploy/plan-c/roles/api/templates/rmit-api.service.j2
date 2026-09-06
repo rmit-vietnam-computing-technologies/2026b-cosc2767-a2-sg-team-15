@@ -1,0 +1,60 @@
+{#
+RMIT University Vietnam
+Course: COSC2767|COSC2805 Systems Deployment and Operations
+Semester: 2026B
+Assessment: Assignment 2
+Author: Vo Hoang Khanh
+ID: s3926310
+Created  date: 03/09/2026
+Last modified: 03/09/2026
+Acknowledgement: Templated from deploy/plan-b/rmit-api.service. Reference:
+  systemd.exec, https://www.freedesktop.org/software/systemd/man/systemd.exec.html
+-#}
+# MANAGED BY ANSIBLE -- edits here are overwritten on the next run.
+# Source: deploy/plan-c/roles/api/templates/rmit-api.service.j2
+
+[Unit]
+Description=RMIT Store API (gunicorn)
+After=network.target{% if db_host == "localhost" %} postgresql.service{% endif %}
+
+{% if db_host == "localhost" %}
+Wants=postgresql.service
+{% endif %}
+
+[Service]
+User={{ app_user }}
+Group={{ app_user }}
+WorkingDirectory={{ app_root }}/server
+
+# [T15-BE-SECRETS] Root-owned, mode 600, outside the checkout. systemd reads
+# this as root before dropping to {{ app_user }}, so the application never
+# needs permission to read its own secrets.
+EnvironmentFile=/etc/rmit-store/api.env
+
+# Set here, not in the environment file: config/wsgi.py reads it before
+# django-environ has parsed anything, so a value in a file loaded later is
+# too late and the failure is a confusing ImproperlyConfigured.
+Environment=DJANGO_SETTINGS_MODULE=config.settings.prod
+
+# Bound to localhost. nginx on this instance is the only thing that reaches
+# gunicorn; the security group is the second line of defence, not the first.
+ExecStart={{ venv_bin }}/gunicorn config.wsgi:application \
+    --bind 127.0.0.1:8000 \
+    --workers {{ gunicorn_workers }} \
+    --timeout 60 \
+    --access-logfile - \
+    --error-logfile - \
+    --capture-output
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=rmit-api
+
+Restart=always
+RestartSec=3
+
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

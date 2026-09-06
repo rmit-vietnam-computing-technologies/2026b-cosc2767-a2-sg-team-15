@@ -1,0 +1,38 @@
+; RMIT University Vietnam
+; Course: COSC2767|COSC2805 Systems Deployment and Operations
+; Semester: 2026B
+; Assessment: Assignment 2
+; Author: Vo Hoang Khanh
+; ID: s3926310
+; Created  date: 03/09/2026
+; Last modified: 03/09/2026
+; Acknowledgement: Reference: Ansible inventory,
+;   https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html
+
+; [T15-BE-ANSIBLE][REQ-7] Inventory — TEMPLATE, placeholders only.
+;
+;   cp inventory.ini.example inventory.ini
+;   $EDITOR inventory.ini
+;
+; inventory.ini is gitignored because it carries real addresses.
+;
+; Two groups, matching the two plays in site.yml. Both instances are reached
+; over their PUBLIC addresses for SSH — the API instance is in a public
+; subnet with port 22 restricted to an admin CIDR, because a private subnet
+; needs a NAT gateway the Learner Lab does not readily provide. Application
+; traffic between the tiers still uses the private address, so nothing but
+; SSH crosses the internet.
+
+[web]
+REPLACE_WITH_WEB_PUBLIC_IP
+
+[api]
+; api_private_ip is what the web tier proxies to and what the API puts in
+; its own ALLOWED_HOSTS. Take it from the EC2 console, "Private IPv4
+; addresses" — not the public one.
+REPLACE_WITH_API_PUBLIC_IP api_private_ip=REPLACE_WITH_API_PRIVATE_IP
+
+[all:vars]
+ansible_user=ec2-user
+ansible_ssh_private_key_file=~/.ssh/project_keys.pem
+ansible_python_interpreter=/usr/bin/python3

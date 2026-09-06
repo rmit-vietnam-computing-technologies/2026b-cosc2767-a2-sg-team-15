@@ -1,0 +1,89 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Vo Hoang Khanh
+# ID: s3926310
+# Created  date: 03/09/2026
+# Last modified: 03/09/2026
+# Acknowledgement: Automates section 1.3 of docs/runbooks/plan-b-ec2.md.
+#   Reference: community.postgresql collection,
+#   https://docs.ansible.com/ansible/latest/collections/community/postgresql/
+
+---
+# [T15-BE-DB][REQ-2] PostgreSQL, co-located with the API tier.
+#
+# Skipped entirely when db_host is not "localhost" -- see site.yml. That
+# switch is what lets the same playbook target RDS without editing a role,
+# and the trade-off is argued in docs/adr/0002-database-topology.md.
+#
+# The database listens on localhost only. Nothing outside this instance ever
+# needs to reach it, so there is no security group rule for 5432 at all --
+# the strongest possible version of "closed by default".
+
+- name: Install PostgreSQL
+  ansible.builtin.dnf:
+    name:
+      - postgresql16
+      - postgresql16-server
+      - python3-psycopg2
+    state: present
+
+- name: Check whether the cluster is initialised
+  ansible.builtin.stat:
+    path: /var/lib/pgsql/data/PG_VERSION
+  register: database_pgdata
+
+- name: Initialise the cluster
+  ansible.builtin.command: postgresql-setup --initdb
+  changed_when: true
+  when: not database_pgdata.stat.exists
+
+# [T15-BE-DB] A fresh initdb writes `ident` auth for TCP on the Red Hat
+# family. Django connects over TCP with a username and password, so it is
+# refused with "FATAL: Ident authentication failed" -- an error that says
+# nothing about the auth method being wrong.
+#
+# Only the `host` lines change. The `local ... peer` lines are what
+# `sudo -u postgres psql` uses, and breaking those locks you out of your own
+# database.
+- name: Require password authentication for TCP connections
+  ansible.builtin.replace:
+    path: /var/lib/pgsql/data/pg_hba.conf
+    regexp: '^(host.*\s+)ident$'
+    replace: '\1scram-sha-256'
+  notify: Reload postgresql
+
+- name: Enable and start PostgreSQL
+  ansible.builtin.systemd:
+    name: postgresql
+    enabled: true
+    state: started
+
+- name: Flush handlers so the database is reloaded before it is used
+  ansible.builtin.meta: flush_handlers
+
+- name: Create the application role
+  community.postgresql.postgresql_user:
+    name: "{{ db_user }}"
+    password: "{{ db_password }}"
+    role_attr_flags: LOGIN,CREATEDB
+  become: true
+  become_user: postgres
+
+- name: Create the application database
+  community.postgresql.postgresql_db:
+    name: "{{ db_name }}"
+    owner: "{{ db_user }}"
+  become: true
+  become_user: postgres
+
+# The gate from the runbook, expressed as a task. If this fails, every
+# migration below it would fail for the same reason and with a worse message.
+- name: Verify the application can connect over TCP
+  community.postgresql.postgresql_ping:
+    login_host: 127.0.0.1
+    login_user: "{{ db_user }}"
+    login_password: "{{ db_password }}"
+    db: "{{ db_name }}"
+  changed_when: false

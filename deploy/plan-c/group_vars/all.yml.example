@@ -1,0 +1,121 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Vo Hoang Khanh
+# ID: s3926310
+# Created  date: 03/09/2026
+# Last modified: 03/09/2026
+# Acknowledgement: Values derived from deploy/plan-b/api.env.example and the
+#   manual steps in docs/runbooks/plan-b-ec2.md. Reference: Ansible variable
+#   precedence, https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html
+
+---
+# Deployment variables — TEMPLATE, placeholders only.
+#
+#   cp group_vars/all.yml.example group_vars/all.yml
+#   $EDITOR group_vars/all.yml
+#
+# group_vars/all.yml is gitignored. This template exists so a marker can see
+# every value the deployment needs without any of the secrets.
+#
+# Two addresses have to be supplied by hand because they are properties of
+# infrastructure this playbook does not provision. CloudFormation in Plan F
+# removes both. Everything else is derived.
+
+# --- Addresses -------------------------------------------------------------
+
+# The web instance's public address. Browsers use it, and it is what the web
+# tier forwards as the Host header — so it must also be in the API's
+# ALLOWED_HOSTS, which roles/api/templates/api.env.j2 handles.
+web_public_ip: REPLACE_WITH_WEB_ELASTIC_IP
+
+# The API instance's private address. Private, not public: traffic between
+# the tiers stays inside the VPC and the API has no route from the internet.
+# Overridden per host in inventory.ini; this default is a safety net.
+api_private_ip: REPLACE_WITH_API_PRIVATE_IP
+
+# --- Source ----------------------------------------------------------------
+
+repo_url: git@github.com:rmit-vietnam-computing-technologies/2026b-cosc2767-a2-sg-team-15.git
+repo_version: dev/backend
+app_user: ec2-user
+app_root: /home/ec2-user/2026b-cosc2767-a2-sg-team-15
+
+# The virtualenv must sit at server/.venv. rmit-api.service references that
+# path, and a venv one level up produces status=203/EXEC from systemd — an
+# error that says nothing about paths.
+venv_bin: /home/ec2-user/2026b-cosc2767-a2-sg-team-15/server/.venv/bin
+
+# --- Django ----------------------------------------------------------------
+
+# Generate once, then keep it. Rotating invalidates every session and every
+# outstanding password-reset link:
+#   python -c "import secrets; print(secrets.token_urlsafe(64))"
+#
+# url-safe base64 rather than Django's get_random_secret_key, whose output
+# contains $ # & * ( ). systemd parses the environment file itself rather
+# than through a shell, so those characters end up literal.
+#
+# In Plan F this moves to Jenkins credentials or SSM Parameter Store and
+# leaves the repository entirely.
+django_secret_key: REPLACE_WITH_GENERATED_SECRET
+
+app_version: "1.0.0"
+
+# prod.py defaults both cookie flags to True. A secure cookie is never sent
+# over http://, so on plain HTTP the admin login accepts the password and
+# bounces back to the login form with no error. Set true the day TLS
+# terminates in front of the web tier.
+cookie_secure: false
+
+# (2 x vCPU) + 1 is the usual starting point. 3 suits a t3.small.
+gunicorn_workers: 3
+
+# --- Database --------------------------------------------------------------
+
+# "localhost" runs PostgreSQL on the API instance and the database role
+# applies. An RDS endpoint here skips that role entirely — see
+# docs/adr/0002-database-topology.md for the argument.
+db_host: localhost
+db_port: 5432
+db_name: rmit_store
+db_user: rmit
+db_password: REPLACE_WITH_DATABASE_PASSWORD
+
+# --- Frontend --------------------------------------------------------------
+
+# Relative, because the web tier proxies /api/ to the API instance and the
+# browser sees one origin. An absolute URL would work only if the API were
+# publicly routable, and would then require CORS.
+web_api_base_url: "/api"
+
+# --- Demo data -------------------------------------------------------------
+
+seed_demo_data: true
+seed_admin_email: admin@rmit.edu.au
+seed_admin_password: REPLACE_WITH_ADMIN_PASSWORD
+
+# --- Instance sizing -------------------------------------------------------
+
+# The frontend build is OOM-killed on a 1 GB instance without this.
+swap_mb: 2048
+
+# --- Assembled for the manage.py tasks -------------------------------------
+
+# The same variables systemd puts in the service environment, so a command
+# run by the playbook sees exactly what gunicorn will see. Without this the
+# prod boot guard fires on a missing SECRET_KEY, which is correct behaviour
+# and a confusing way to discover a missing environment.
+django_environment:
+  DJANGO_SETTINGS_MODULE: config.settings.prod
+  SECRET_KEY: "{{ django_secret_key }}"
+  ALLOWED_HOSTS: "{{ web_public_ip }},{{ api_private_ip }},127.0.0.1,localhost"
+  DATABASE_URL: "postgres://{{ db_user }}:{{ db_password }}@{{ db_host }}:{{ db_port }}/{{ db_name }}"
+  CLIENT_URL: "http://{{ web_public_ip }}"
+  CORS_ALLOWED_ORIGINS: "http://{{ web_public_ip }}"
+  CSRF_TRUSTED_ORIGINS: "http://{{ web_public_ip }}"
+  SESSION_COOKIE_SECURE: "{{ cookie_secure | ternary('True', 'False') }}"
+  CSRF_COOKIE_SECURE: "{{ cookie_secure | ternary('True', 'False') }}"
+  APP_VERSION: "{{ app_version }}"
+  GIT_COMMIT: "{{ api_deployed_commit | default('unknown') }}"
