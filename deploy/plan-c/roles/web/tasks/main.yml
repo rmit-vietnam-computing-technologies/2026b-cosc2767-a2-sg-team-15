@@ -11,7 +11,7 @@
 #   https://docs.ansible.com/ansible/latest/collections/community/general/npm_module.html
 
 ---
-# [T15-BE-ANSIBLE][REQ-7] The web tier: the SPA and the public entry point.
+# The web tier: the SPA and the public entry point.
 #
 # The only instance with a route from the internet. It serves the built
 # bundle from disk and proxies everything Django-shaped to the API instance's
@@ -45,8 +45,7 @@
     dest: "{{ app_root }}"
     version: "{{ repo_version }}"
     accept_hostkey: true
-  become: true
-  become_user: "{{ app_user }}"
+  become: false
   register: web_checkout
 
 - name: Install frontend dependencies

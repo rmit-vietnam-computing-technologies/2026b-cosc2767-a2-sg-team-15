@@ -11,7 +11,7 @@
 #   https://docs.ansible.com/ansible/latest/collections/amazon/aws/ec2_metadata_facts_module.html
 
 ---
-# [T15-BE-ANSIBLE][REQ-7] The API tier.
+# The API tier.
 #
 # Everything the Plan B runbook does by hand between cloning the repository
 # and starting gunicorn, with one substantive change: no address is typed by
@@ -46,8 +46,7 @@
     dest: "{{ app_root }}"
     version: "{{ repo_version }}"
     accept_hostkey: true
-  become: true
-  become_user: "{{ app_user }}"
+  become: false
   register: api_checkout
 
 # [ADV-3] The commit that is actually deployed, read from the checkout rather
