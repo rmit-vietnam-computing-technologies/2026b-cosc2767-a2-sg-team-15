@@ -36,6 +36,16 @@
     group: root
     mode: "0600"
 
+- name: Check whether the swap file is already active
+  ansible.builtin.command: swapon --show=NAME --noheadings
+  register: common_swap_active
+  changed_when: false
+
+- name: Activate swap for this boot
+  ansible.builtin.command: swapon /swapfile
+  changed_when: true
+  when: "'/swapfile' not in common_swap_active.stdout"
+
 # `mkswap` on an already-formatted file is an error, so the signature check
 # guards it. This is the pattern for any command module that is not
 # naturally idempotent.
