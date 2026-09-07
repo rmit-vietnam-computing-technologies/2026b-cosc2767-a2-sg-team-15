@@ -1,0 +1,218 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Vo Hoang Khanh
+# ID: s3926310
+# Created  date: 07/09/2026
+# Last modified: 07/09/2026
+# Acknowledgement: Encodes the start order that deploy/plan-c/site.yml
+#   expresses as play order, and the environment that
+#   deploy/plan-c/roles/api/templates/api.env.j2 renders. Drafted with
+#   Claude (Anthropic) in a guided session; the author ran and verified the
+#   stack. References: Compose file reference,
+#   https://docs.docker.com/reference/compose-file/; depends_on conditions,
+#   https://docs.docker.com/reference/compose-file/services/#depends_on
+
+# The whole store on one host.
+#
+#     cp .env.example .env && $EDITOR .env
+#     docker compose up -d --build
+#     docker compose --profile seed run --rm seed     # demo data, when wanted
+#     docker compose ps                               # every service healthy
+#
+# Start order IS the dependency graph, and Compose enforces it:
+#
+#     db healthy  ->  migrate exits 0  ->  api ready  ->  web serving
+#
+# That answers the question the upstream README asks of this plan: where do
+# migrations run when three containers start at once? In their own container,
+# once, before the API takes traffic, and still once under --scale api=2.
+# The API image itself never migrates -- docs/adr/0002-database-topology.md.
+#
+# Only web publishes a port. db and api are reachable on the compose network
+# and nowhere else, which is the same posture the Plan C security groups
+# enforce with rules.
+
+name: rmit-store
+
+# ---------------------------------------------------------------------------
+# Shared definitions
+# ---------------------------------------------------------------------------
+
+x-api-build: &api-build
+  context: ./server
+  target: runtime
+  args:
+    GIT_COMMIT: ${GIT_COMMIT:-dev}
+    APP_VERSION: ${APP_VERSION:-1.0.0}
+
+# [T15-BE-SECRETS] Every variable the API image receives, named here and
+# nowhere else. Values are interpolated from .env; nothing is passed through
+# wholesale, so what a container can see is what this list says. The two
+# `:?` entries refuse to start the stack rather than start it with a
+# placeholder -- the same fail-fast the prod settings module applies, one
+# layer earlier and with a message that names the variable.
+x-api-environment: &api-environment
+  SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is not set -- copy .env.example to .env and fill it in}
+  DATABASE_URL: postgres://${POSTGRES_USER:-rmit}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is not set -- see .env.example}@db:5432/${POSTGRES_DB:-rmit_store}
+  # [T15-BE-HOSTHDR] Four callers, four hosts. The public host is what a
+  # browser types and what web forwards as Host; 127.0.0.1 is the readiness
+  # check; `api` is anything that reaches gunicorn directly on the compose
+  # network, such as a Prometheus scrape; `web` is the smoke suite when it is
+  # run from inside the stack. This is the container form of the brief's
+  # warning that ALLOWED_HOSTS and load balancers interact badly.
+  ALLOWED_HOSTS: ${PUBLIC_HOST:-localhost},127.0.0.1,api,web
+  CLIENT_URL: ${PUBLIC_ORIGIN:-http://localhost}
+  CORS_ALLOWED_ORIGINS: ${PUBLIC_ORIGIN:-http://localhost}
+  CSRF_TRUSTED_ORIGINS: ${PUBLIC_ORIGIN:-http://localhost}
+  # prod.py defaults both to True; a secure cookie is never sent over http://
+  # and the admin login loops silently. Flip the day TLS terminates in front.
+  SESSION_COOKIE_SECURE: ${COOKIE_SECURE:-False}
+  CSRF_COOKIE_SECURE: ${COOKIE_SECURE:-False}
+  # [T15-BE-MEDIA] Off by default: on one host the media volume below is the
+  # right answer. The two-instance run sets these in its own env file, and
+  # compose.s3.yaml is the laptop rehearsal of that switch.
+  USE_S3: ${USE_S3:-False}
+  AWS_STORAGE_BUCKET_NAME: ${AWS_STORAGE_BUCKET_NAME:-}
+  AWS_S3_REGION_NAME: ${AWS_S3_REGION_NAME:-us-east-1}
+
+# ---------------------------------------------------------------------------
+# Services
+# ---------------------------------------------------------------------------
+
+services:
+
+  # [T15-BE-DB][REQ-2] PostgreSQL 16, matching the Plan C instance. A
+  # container here, RDS in Plan F -- docs/adr/0002-database-topology.md.
+  # The volume is the only state on the host besides media.
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-rmit_store}
+      POSTGRES_USER: ${POSTGRES_USER:-rmit}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is not set -- see .env.example}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # "Accepting connections" is the gate migrate waits on. pg_isready is
+    # shipped in the image and needs no password.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rmit} -d ${POSTGRES_DB:-rmit_store}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  # [T15-BE-MIGRATE][REQ-2] Schema changes as a one-shot container.
+  #
+  # Same image as api, different command, no restart policy: it runs to
+  # completion and api waits for its exit code. Two api replicas therefore
+  # never race to apply the same migration, because neither of them applies
+  # any. On a stack that is already migrated it exits 0 with "No migrations
+  # to apply", so `up` is safe to repeat -- the property Plan C proves with
+  # changed=0 and this proves with an exit code.
+  migrate:
+    image: rmit-store-api:${GIT_COMMIT:-dev}
+    build: *api-build
+    command: ["python", "manage.py", "migrate", "--noinput"]
+    environment: *api-environment
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    image: rmit-store-api:${GIT_COMMIT:-dev}
+    build: *api-build
+    environment:
+      <<: *api-environment
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-3}
+    volumes:
+      # [T15-BE-MEDIA] Uploads outlive the container and are shared with web,
+      # which serves them. Correct for one host; S3 the moment there are two.
+      - media:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    # [T15-BE-HEALTH] Readiness here, overriding the image's liveness check.
+    # The image asks "is the process alive" because that is what an
+    # orchestrator restarts on. Compose asks "may web be pointed at it yet",
+    # which is a question about the database and storage -- /readyz/. The
+    # upstream README names this exact use for the endpoint.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/readyz/', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    # gunicorn's graceful shutdown allows 30s for in-flight requests; the
+    # Compose default of 10s would SIGKILL workers mid-request on `down`.
+    stop_grace_period: 35s
+    restart: unless-stopped
+
+  # [T15-BE-NGINX][REQ-2] The only published port. Serves the bundle, proxies
+  # the API by service name, and serves media from the shared volume.
+  web:
+    image: rmit-store-web:${GIT_COMMIT:-dev}
+    build:
+      context: ./client
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-dev}
+        APP_VERSION: ${APP_VERSION:-1.0.0}
+    environment:
+      API_UPSTREAM: api:8000
+    ports:
+      - "${WEB_PORT:-80}:80"
+    volumes:
+      - media:/srv/media:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+  # Demo catalogue: 47 photographed products, reviews, an admin and the demo
+  # member and merchant. Behind a profile so a plain `up` can never seed --
+  # this file will one day be pointed at something that is not a laptop.
+  #
+  #     docker compose --profile seed run --rm seed
+  #
+  # Idempotent by the command's own contract ("run it twice and it will skip
+  # what already exists"), so no marker file is needed, unlike Plan C where
+  # Ansible needed a changed/ok signal. Mounts the media volume because the
+  # product photographs are uploads: through the storage API, so the same
+  # command lands them in S3 when USE_S3 is on.
+  seed:
+    image: rmit-store-api:${GIT_COMMIT:-dev}
+    build: *api-build
+    profiles: [seed]
+    command:
+      - python
+      - manage.py
+      - seed_demo
+      - --demo-users
+      - --admin-email
+      - ${SEED_ADMIN_EMAIL:-admin@rmit.edu.au}
+      - --admin-password
+      - ${SEED_ADMIN_PASSWORD:?SEED_ADMIN_PASSWORD is not set -- see .env.example}
+    environment: *api-environment
+    volumes:
+      - media:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: "no"
+
+volumes:
+  pgdata:
+  media:
