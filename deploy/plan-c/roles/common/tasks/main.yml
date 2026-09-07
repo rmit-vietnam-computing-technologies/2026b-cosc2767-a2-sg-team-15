@@ -41,11 +41,6 @@
   register: common_swap_active
   changed_when: false
 
-- name: Activate swap for this boot
-  ansible.builtin.command: swapon /swapfile
-  changed_when: true
-  when: "'/swapfile' not in common_swap_active.stdout"
-
 # `mkswap` on an already-formatted file is an error, so the signature check
 # guards it. This is the pattern for any command module that is not
 # naturally idempotent.
@@ -67,19 +62,16 @@
     opts: sw
     state: present
 
-- name: Activate swap for this boot
-  ansible.builtin.command: swapon /swapfile
-  register: common_swapon
-  changed_when: common_swapon.rc == 0
-  failed_when:
-    - common_swapon.rc != 0
-    - "'already' not in common_swapon.stderr"
-
 - name: Enable and start nginx
   ansible.builtin.systemd:
     name: nginx
     enabled: true
     state: started
+
+- name: Activate swap for this boot
+  ansible.builtin.command: swapon /swapfile
+  changed_when: true
+  when: "'/swapfile' not in common_swap_active.stdout"
 
 # [T15-BE-NGINX] Amazon Linux ships a port-80 server block inside
 # nginx.conf, and nginx keeps the first default_server it parses. Since
