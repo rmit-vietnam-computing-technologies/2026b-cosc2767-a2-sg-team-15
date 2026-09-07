@@ -1,0 +1,59 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Vo Hoang Khanh
+# ID: s3926310
+# Created  date: 07/09/2026
+# Last modified: 07/09/2026
+# Acknowledgement: Patterns mirror the root .gitignore for this directory.
+#   Reference: .dockerignore file syntax,
+#   https://docs.docker.com/build/concepts/context/#dockerignore-files
+
+# [T15-BE-DOCKER][REQ-2] What never enters the build context.
+#
+# The Dockerfile copies named paths rather than `.`, so most of this is
+# belt-and-braces for context size and build speed. Two entries are about
+# correctness and are the reason this file exists at all:
+#
+#   .env          manage.py reads DJANGO_SETTINGS_MODULE out of it. A laptop's
+#                 .env baked into the image would make `manage.py migrate`
+#                 inside a container silently run under dev settings.
+#   .venv/        the laptop's virtualenv is the wrong interpreter's, and it
+#                 is the largest thing in the directory.
+#
+# tests/ is deliberately NOT listed. The `test` build target copies it; the
+# `runtime` target simply never asks for it.
+
+# --- Secrets and local configuration ---------------------------------------
+.env
+.env.*
+
+# --- Interpreter and caches --------------------------------------------------
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# --- Generated at build or run time, never copied in --------------------------
+# collectstatic runs inside the build; a laptop's staticfiles/ would be the
+# wrong settings module's output (see the Plan B troubleshooting table).
+staticfiles/
+# Uploads are state. They live on a volume or in S3, never in an image.
+media/
+
+# --- Test output ---------------------------------------------------------------
+test-reports/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+junit.xml
+
+# --- Not part of the application -----------------------------------------------
+.git/
+.gitignore
+Dockerfile
+.dockerignore
+*.md
