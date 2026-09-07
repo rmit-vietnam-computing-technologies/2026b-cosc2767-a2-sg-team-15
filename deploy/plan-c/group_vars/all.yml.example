@@ -5,7 +5,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 03/09/2026
-# Last modified: 03/09/2026
+# Last modified: 07/09/2026
 # Acknowledgement: Values derived from deploy/plan-b/api.env.example and the
 #   manual steps in docs/runbooks/plan-b-ec2.md. Reference: Ansible variable
 #   precedence, https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html
@@ -22,23 +22,38 @@
 # Two addresses have to be supplied by hand because they are properties of
 # infrastructure this playbook does not provision. CloudFormation in Plan F
 # removes both. Everything else is derived.
+#
+# The manual prerequisites (security groups, deploy keys, the ProxyJump host
+# entry, collections) are listed in inventory.ini.example and in full in
+# docs/runbooks/plan-c-split-tier.md.
 
 # --- Addresses -------------------------------------------------------------
 
-# The web instance's public address. Browsers use it, and it is what the web
+# The web instance's Elastic IP. Browsers use it, and it is what the web
 # tier forwards as the Host header — so it must also be in the API's
 # ALLOWED_HOSTS, which roles/api/templates/api.env.j2 handles.
 web_public_ip: REPLACE_WITH_WEB_ELASTIC_IP
 
 # The API instance's private address. Private, not public: traffic between
 # the tiers stays inside the VPC and the API has no route from the internet.
-# Overridden per host in inventory.ini; this default is a safety net.
+#
+# This value is read by the WEB host, which renders its nginx upstream from
+# it. The api role overwrites it on the API host with the address IMDS
+# reports, so on that host a typo here is harmless; on the web host it is a
+# 502. Set it to the same value as the [api] entry in inventory.ini.
 api_private_ip: REPLACE_WITH_API_PRIVATE_IP
 
 # --- Source ----------------------------------------------------------------
 
 repo_url: git@github.com:rmit-vietnam-computing-technologies/2026b-cosc2767-a2-sg-team-15.git
+
+# The ref both tiers clone and deploy. It is NOT your local checkout: the
+# instances fetch from GitHub, so unpushed commits do not exist as far as
+# they are concerned, and whoever runs this playbook deploys this branch
+# regardless of what they have checked out. dev/backend during the backend
+# workstream; main once the tiers merge.
 repo_version: dev/backend
+
 app_user: ec2-user
 app_root: /home/ec2-user/2026b-cosc2767-a2-sg-team-15
 
@@ -91,11 +106,15 @@ db_password: REPLACE_WITH_DATABASE_PASSWORD
 web_api_base_url: "/api"
 
 # Where the built SPA is served from. Deliberately not /usr/share/nginx/html:
-# that directory belongs to the nginx package and ships its own files.
+# that directory belongs to the nginx package and ships its own files, and
+# a copy into it left the bundle mixed with the vendor's default site.
 web_root: /var/www/rmit-store
 
 # --- Demo data -------------------------------------------------------------
 
+# Guarded by a marker file on the API instance after the first successful
+# seed, so a re-run reports ok. Set false to skip entirely; the role never
+# un-seeds.
 seed_demo_data: true
 seed_admin_email: admin@rmit.edu.au
 seed_admin_password: REPLACE_WITH_ADMIN_PASSWORD

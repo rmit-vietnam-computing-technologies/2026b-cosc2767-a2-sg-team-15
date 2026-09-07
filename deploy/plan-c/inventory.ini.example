@@ -5,9 +5,10 @@
 ; Author: Vo Hoang Khanh
 ; ID: s3926310
 ; Created  date: 03/09/2026
-; Last modified: 03/09/2026
+; Last modified: 07/09/2026
 ; Acknowledgement: Reference: Ansible inventory,
 ;   https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html
+;   SSH ProxyJump, https://man.openbsd.org/ssh_config#ProxyJump
 
 ; [T15-BE-ANSIBLE][REQ-7] Inventory — TEMPLATE, placeholders only.
 ;
@@ -16,21 +17,50 @@
 ;
 ; inventory.ini is gitignored because it carries real addresses.
 ;
-; Two groups, matching the two plays in site.yml. Both instances are reached
-; over their PUBLIC addresses for SSH — the API instance is in a public
-; subnet with port 22 restricted to an admin CIDR, because a private subnet
-; needs a NAT gateway the Learner Lab does not readily provide. Application
-; traffic between the tiers still uses the private address, so nothing but
-; SSH crosses the internet.
+; Two groups, matching the two tiers in site.yml.
+;
+; The web instance is reached over its Elastic IP. The API instance is
+; reached over its PRIVATE address, through the web instance, using SSH
+; ProxyJump: the API instance has no port open to the internet at all, and
+; its public address -- which the Learner Lab reassigns on every session --
+; appears nowhere in this configuration. The key stays on the control node;
+; ProxyJump authenticates the second hop locally.
+;
+; ---------------------------------------------------------------------------
+; Before this inventory works -- none of it is automated in Plan C:
+;
+;   1. Two security groups. api-sg must allow 22 and 80 from web-sg AS A
+;      GROUP REFERENCE, not a CIDR. A rule's source type cannot be edited
+;      after creation; delete and recreate if you got it wrong.
+;   2. A read-only deploy key on EACH instance, registered on the repo
+;      (Settings -> Deploy keys), verified with git ls-remote. The playbook
+;      clones on both hosts and has no other credential.
+;   3. A `Host rmit-web` entry in ~/.ssh/config on the control node, which
+;      the ProxyJump below resolves:
+;
+;        Host rmit-web
+;          HostName <web-elastic-ip>
+;          User ec2-user
+;          IdentityFile ~/.ssh/project_keys.pem
+;
+;   4. The collections: ansible-galaxy collection install -r requirements.yml
+;
+; Full procedure and the troubleshooting table are in
+; docs/runbooks/plan-c-split-tier.md.
+; ---------------------------------------------------------------------------
 
 [web]
-REPLACE_WITH_WEB_PUBLIC_IP
+REPLACE_WITH_WEB_ELASTIC_IP
 
 [api]
-; api_private_ip is what the web tier proxies to and what the API puts in
-; its own ALLOWED_HOSTS. Take it from the EC2 console, "Private IPv4
-; addresses" — not the public one.
-REPLACE_WITH_API_PUBLIC_IP api_private_ip=REPLACE_WITH_API_PRIVATE_IP
+; The private address, from the EC2 console "Private IPv4 addresses". It
+; survives stop/start for the life of the instance. The same value must also
+; be set as api_private_ip in group_vars/all.yml -- the web host renders its
+; upstream from the group var and never sees another host's inventory vars.
+REPLACE_WITH_API_PRIVATE_IP
+
+[api:vars]
+ansible_ssh_common_args=-o ProxyJump=rmit-web
 
 [all:vars]
 ansible_user=ec2-user
