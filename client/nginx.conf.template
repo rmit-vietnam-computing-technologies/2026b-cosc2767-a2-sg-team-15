@@ -1,0 +1,125 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Vo Hoang Khanh
+# ID: s3926310
+# Created  date: 07/09/2026
+# Last modified: 07/09/2026
+# Acknowledgement: The web tier's site from
+#   deploy/plan-c/roles/web/templates/web-nginx.conf.j2, re-targeted at a
+#   container. Drafted with Claude (Anthropic) in a guided session; the
+#   author ran and verified it. References: nginx proxy module,
+#   https://nginx.org/en/docs/http/ngx_http_proxy_module.html; nginx
+#   resolver directive,
+#   https://nginx.org/en/docs/http/ngx_http_core_module.html#resolver
+
+# RENDERED AT CONTAINER START. The nginx image's entrypoint substitutes
+# ${API_UPSTREAM} and writes the result to /etc/nginx/conf.d/default.conf,
+# replacing the vendor's default site. Every other $variable below is
+# nginx's own and survives the substitution untouched.
+
+#  The public entry point, containerised.
+#
+# Three differences from the Plan C site, each forced by containers:
+#
+#   1. The API address is not known when the image is built, so it arrives
+#      as an environment variable and is resolved at request time (below).
+#   2. /static/ is proxied rather than served from disk. The API image ran
+#      collectstatic into itself and whitenoise serves the result; this tier
+#      no longer has those files and does not need them.
+#   3. /media/ is served from a volume the API container writes to -- one
+#      replica only -- or is unused once USE_S3 moves uploads off the
+#      instance entirely (docs/adr/0003-media-storage.md).
+
+server {
+    # IPv4 only, unlike the Plan C site. Docker publishes the port over IPv4,
+    # and an [::]:80 listener makes nginx refuse to start on any host with
+    # IPv6 disabled -- an outage caused by a socket nothing would have used.
+    listen      80 default_server;
+    server_name _;
+
+    root  /usr/share/nginx/html;
+    index index.html;
+
+    client_max_body_size 10M;
+
+    gzip            on;
+    gzip_types      text/css application/javascript application/json image/svg+xml;
+    gzip_min_length 1024;
+
+    #  Resolve the API tier when a request arrives, not when
+    # nginx starts.
+    #
+    # An `upstream` block resolves its servers once, at start. In Plan C that
+    # was correct: the address came from inventory and did not move. A
+    # container's address is not stable -- recreate the api service and this
+    # tier would keep proxying to the old address until it was restarted.
+    # 127.0.0.11 is Docker's embedded DNS on every user-defined network,
+    # Compose and Swarm included; valid=30s bounds how long a stale answer
+    # lives. When API_UPSTREAM is an IP literal (two instances), no lookup
+    # happens and the resolver is idle.
+    #
+    # The cost is the upstream keepalive pool, which needs a static
+    # `upstream` block. One TCP connect per proxied request is invisible at
+    # this store's traffic and is the honest trade for not caching an
+    # address that can change underneath us.
+    resolver 127.0.0.11 ipv6=off valid=30s;
+    set $rmit_api http://${API_UPSTREAM};
+
+    # --- The SPA -----------------------------------------------------------
+    # An unknown path is a Vue route, not a missing file. Without the
+    # fallback, navigating to /shop inside the app works and refreshing that
+    # page returns 404 -- a bug that only appears on reload.
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # [T15-FE-CONFIG] Never cache runtime configuration. Caching it means a
+    # file mounted over config.js does nothing until every browser
+    # hard-reloads, which defeats the design.
+    location = /config.js {
+        add_header Cache-Control "no-store";
+    }
+
+    # Hashed filenames are immutable by construction: a changed file gets a
+    # changed name, so this can never serve something stale.
+    location /assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    # --- Uploaded product images --------------------------------------------
+    # [T15-BE-MEDIA] A volume shared with the API container. Correct for
+    # exactly one API replica; with USE_S3 on, image_url no longer points
+    # here and this location is idle. The directory is a mount point, so an
+    # image with nothing mounted answers 404 rather than failing to start.
+    location /media/ {
+        alias /srv/media/;
+        access_log off;
+        expires 7d;
+    }
+
+    # --- Everything the API tier owns ---------------------------------------
+    location ~ ^/(api|admin|healthz|readyz|static)(/|$) {
+        proxy_pass $rmit_api;
+
+        # [T15-BE-HOSTHDR] $host is what the browser typed. Django builds
+        # image_url from it, so it must reach gunicorn unchanged, and it must
+        # appear in the API's ALLOWED_HOSTS -- `localhost` under Compose, the
+        # public address on an instance. Send $proxy_host instead and every
+        # product image points at a container name no browser can resolve.
+        proxy_set_header Host              $host;
+        proxy_set_header X-Forwarded-Host  $host;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_redirect off;
+
+        # Fail fast rather than hang. If the API tier is down, a 502 in five
+        # seconds is a better answer than a browser spinning for a minute,
+        # and it is what a health check needs to see.
+        proxy_connect_timeout 5s;
+        proxy_read_timeout    60s;
+    }
+}
