@@ -10,7 +10,7 @@
 #   Reference: .dockerignore file syntax,
 #   https://docs.docker.com/build/concepts/context/#dockerignore-files
 
-# [T15-BE-DOCKER][REQ-2] What never enters the build context.
+# What never enters the build context.
 #
 # The Dockerfile copies named paths rather than `.`, so most of this is
 # belt-and-braces for context size and build speed. Two entries are about
@@ -30,10 +30,13 @@
 .env.*
 
 # --- Interpreter and caches --------------------------------------------------
+# Unlike .gitignore, a pattern here matches only at the context root unless
+# it starts with **/. Without the prefix, every apps/*/__pycache__/ from the
+# laptop was copied into the image.
 .venv/
 venv/
-__pycache__/
-*.py[cod]
+**/__pycache__/
+**/*.py[cod]
 .pytest_cache/
 
 # --- Generated at build or run time, never copied in --------------------------

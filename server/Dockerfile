@@ -15,15 +15,20 @@
 #   https://docs.gunicorn.org/en/stable/settings.html; Django static files,
 #   https://docs.djangoproject.com/en/5.2/howto/static-files/deployment/
 
-# The API tier as an image.
+#  The API tier as an image.
 #
 # Three stages. `builder` resolves dependencies, `runtime` is what ships,
 # `test` layers the suite on top of runtime so CI tests the exact bytes that
-# deploy. The default target is runtime:
+# deploy. Always name the target: with no --target, Docker builds the LAST
+# stage in the file, and that is test, because test must come after the
+# runtime it derives from.
 #
-#     docker build -t rmit-store-api:$(git rev-parse --short HEAD) \
+#     docker build --target runtime -t rmit-store-api:$(git rev-parse --short HEAD) \
 #         --build-arg GIT_COMMIT=$(git rev-parse --short HEAD) server/
 #     docker build --target test -t rmit-store-api-test server/
+#
+# A test image started by mistake fails loudly -- its CMD is pytest, not
+# gunicorn -- so the wrong target cannot quietly serve traffic.
 #
 # What the image deliberately does NOT do: run migrations. `migrate` is a
 # separate invocation of this same image, ordered by whatever runs it, so two
@@ -31,6 +36,11 @@
 # on record in docs/adr/0002-database-topology.md and it does not change
 # because the process is now in a container.
 
+# One interpreter everywhere. 3.14 is what the suite has been run on and what
+# Django 5.2.8+ supports; pinning it here retires the drift between the
+# laptop (3.14) and the Plan C instances (3.11). The patch level floats on
+# purpose so a rebuild picks up interpreter security fixes; a digest pin is a
+# Plan F decision.
 ARG PYTHON_VERSION=3.14
 
 
@@ -62,7 +72,7 @@ RUN pip install -r requirements.txt
 # ---------------------------------------------------------------------------
 FROM python:${PYTHON_VERSION}-slim AS runtime
 
-# The build that is running, baked in at build time so
+# [ADV-3] The build that is running, baked in at build time so
 # GET /api/version/ cannot disagree with the image tag. Both remain ordinary
 # environment variables and can still be overridden at run time.
 ARG APP_VERSION=1.0.0
@@ -72,7 +82,7 @@ LABEL org.opencontainers.image.title="RMIT Store API" \
       org.opencontainers.image.version="${APP_VERSION}" \
       org.opencontainers.image.revision="${GIT_COMMIT}"
 
-# DJANGO_SETTINGS_MODULE is fixed to prod in the
+#  DJANGO_SETTINGS_MODULE is fixed to prod in the
 # image, not read from a file. config/wsgi.py consults it before anything has
 # parsed a .env, and prod refuses to boot without a real SECRET_KEY and
 # ALLOWED_HOSTS -- so a container started with no configuration fails loudly
@@ -85,7 +95,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     APP_VERSION="${APP_VERSION}" \
     GIT_COMMIT="${GIT_COMMIT}"
 
-# gunicorn reads WEB_CONCURRENCY natively for --workers, so the
+#  gunicorn reads WEB_CONCURRENCY natively for --workers, so the
 # worker count is a plain environment variable and no entrypoint script is
 # needed to compute it. 3 matches the Plan C value for a t3.small; override
 # per environment.
@@ -121,7 +131,7 @@ COPY --chown=app:app seed_assets ./seed_assets
 # verify it from the image config without resolving /etc/passwd.
 USER 1000:1000
 
-# [T15-BE-STATIC][REQ-2] collectstatic belongs to the build, not the
+#  collectstatic belongs to the build, not the
 # entrypoint: its output is identical on every replica and never changes
 # after the image is built (docs/adr/0003-media-storage.md). It must run
 # under the SAME settings module as the server -- prod writes the whitenoise
@@ -134,7 +144,7 @@ RUN SECRET_KEY=build-time-only-never-used-at-runtime \
 
 EXPOSE 8000
 
-# [T15-BE-HEALTH] Liveness, not readiness. The image-level check is what an
+#  Liveness, not readiness. The image-level check is what an
 # orchestrator uses to decide whether to restart the task, and /healthz/
 # touches nothing -- a probe that checked the database would restart a
 # healthy process because the database was slow. Compose overrides this with
@@ -146,7 +156,7 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
     CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz/', timeout=2)"]
 
-# [T15-BE-WSGI][REQ-2] bind 0.0.0.0 -- the container namespace is the
+#  bind 0.0.0.0 -- the container namespace is the
 # boundary, not loopback. Nothing publishes this port; the web tier reaches
 # it over the container network.
 #
@@ -157,9 +167,16 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
 # X-Forwarded-* headers the web tier sends. The same reasoning as the bind:
 # only the web tier can reach this socket.
 #
+# --no-control-socket: gunicorn 25.1 and later open a management socket by
+# default, under $XDG_RUNTIME_DIR or $HOME/.gunicorn/. Neither exists for
+# this user, so every boot logged an ERROR before serving normally. Nothing
+# runs gunicornc inside a container -- the orchestrator scales replicas, not
+# workers -- so the interface is disabled rather than given somewhere to
+# live. The flag needs gunicorn >= 25.1, which the dependency lock pins.
+#
 # Logs to stdout and stderr so the container runtime collects them, which is
 # the shape a log shipper expects (ADV-4).
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--forwarded-allow-ips", "*", "--timeout", "60", "--access-logfile", "-", "--error-logfile", "-", "--capture-output"]
+CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--forwarded-allow-ips", "*", "--no-control-socket", "--timeout", "60", "--access-logfile", "-", "--error-logfile", "-", "--capture-output"]
 
 
 # ---------------------------------------------------------------------------
@@ -174,8 +191,11 @@ CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--forward
 FROM runtime AS test
 
 # Root only long enough to add the dev tooling to the venv.
+#
+# Both files: requirements-dev.txt begins with `-r requirements.txt`, and the
+# runtime stage deliberately does not carry the runtime requirements file.
 USER root
-COPY requirements-dev.txt ./
+COPY requirements.txt requirements-dev.txt ./
 RUN pip install --no-cache-dir -r requirements-dev.txt
 
 COPY --chown=app:app pytest.ini .coveragerc ./
