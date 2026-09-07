@@ -78,6 +78,17 @@
       delegate_to: localhost
       become: false
 
+    # /healthz/ is proxied to the API tier, so the verify play passed while the
+    # storefront itself returned 403 on every request. Fetching / and asserting on
+    # the SPA's mount point tests the thing rather than a proxy in front of it.
+    - name: Confirm the storefront itself renders
+      ansible.builtin.uri:
+        url: "http://{{ web_public_ip }}/"
+        return_content: true
+      register: verify_spa
+      failed_when: '"<div id=\"app\"" not in verify_spa.content'
+      delegate_to: localhost
+
     - name: Report where to point the smoke suite
       ansible.builtin.debug:
         msg: >-

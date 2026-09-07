@@ -121,6 +121,14 @@
   register: api_migrate
   changed_when: "'No migrations to apply' not in api_migrate.stdout"
 
+- name: Ensure the deployment state directory exists
+  ansible.builtin.file:
+    path: /var/lib/rmit-store
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
 - name: Seed the demo catalogue
   ansible.builtin.command:
     cmd: >-
@@ -128,12 +136,23 @@
       --admin-email {{ seed_admin_email }}
       --admin-password {{ seed_admin_password }}
     chdir: "{{ app_root }}/server"
+    creates: /var/lib/rmit-store/.demo-seeded
   environment: "{{ django_environment }}"
   become: true
   become_user: "{{ app_user }}"
   when: seed_demo_data | bool
   register: api_seed
-  changed_when: "'Seeding complete' in api_seed.stdout"
+
+- name: Record that the demo catalogue has been seeded
+  ansible.builtin.file:
+    path: /var/lib/rmit-store/.demo-seeded
+    state: touch
+    owner: root
+    group: root
+    mode: "0644"
+  when:
+    - seed_demo_data | bool
+    - api_seed is changed
 
 # [T15-BE-STATIC] collectstatic must run under the SAME settings module as
 # the server. Dev uses StaticFilesStorage and writes no manifest; prod uses

@@ -48,26 +48,48 @@
   become: false
   register: web_checkout
 
+- name: Check whether frontend dependencies are installed
+  ansible.builtin.stat:
+    path: "{{ app_root }}/client/node_modules/.package-lock.json"
+  register: web_node_modules
+
+# `npm ci` deletes and reinstalls node_modules by design, so it can never
+# report ok on its own. Guarding on the checkout gives the same guarantee --
+# dependencies match the lockfile that was just cloned -- without reinstalling
+# several hundred packages on every run.
 - name: Install frontend dependencies
   community.general.npm:
     path: "{{ app_root }}/client"
     ci: true
   become: true
   become_user: "{{ app_user }}"
+  when: web_checkout.changed or not web_node_modules.stat.exists
 
-# The build runs here because Plan C has no CI yet. It is the wrong place and
-# Plan F moves it: it needs Node, which nothing else on this tier needs at
-# runtime, and on a 1 GB instance it is the step that runs the box out of
-# memory. Building once in a pipeline and shipping the artifact is the whole
-# argument, and this task is the evidence for it.
+- name: Check whether the bundle has been built
+  ansible.builtin.stat:
+    path: "{{ app_root }}/client/dist/index.html"
+  register: web_dist
+
+# Conditioned on the checkout rather than `creates:`. With `creates:` the
+# bundle is pinned forever: once dist/index.html exists the build never runs
+# again, so a frontend change deploys silently as the previous bundle.
 - name: Build the SPA bundle
   ansible.builtin.command:
     cmd: npm run build
     chdir: "{{ app_root }}/client"
-    creates: "{{ app_root }}/client/dist/index.html"
   become: true
   become_user: "{{ app_user }}"
+  when: web_checkout.changed or not web_dist.stat.exists
+  changed_when: true
   register: web_build
+
+- name: Template the runtime configuration
+  ansible.builtin.template:
+    src: config.js.j2
+    dest: "{{ app_root }}/client/dist/config.js"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: "0644"
 
 - name: Publish the bundle to the web root
   ansible.builtin.copy:
@@ -79,19 +101,13 @@
     mode: "0644"
     directory_mode: "0755"
 
-# [T15-FE-CONFIG][REQ-2] Runtime configuration, written after the bundle.
-#
-# Order matters: the copy above would overwrite this with the file from
-# dist/. Templating it afterwards is what makes one built artifact promotable
-# between environments without a rebuild -- the property the whole runtime
-# config design exists to provide.
-- name: Template the runtime configuration
-  ansible.builtin.template:
-    src: config.js.j2
-    dest: /usr/share/nginx/html/config.js
+- name: Ensure the web root is traversable
+  ansible.builtin.file:
+    path: /usr/share/nginx/html
+    state: directory
     owner: root
     group: root
-    mode: "0644"
+    mode: "0755"
 
 - name: Install the storefront site configuration
   ansible.builtin.template:
