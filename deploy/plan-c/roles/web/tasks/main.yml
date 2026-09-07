@@ -91,23 +91,31 @@
     group: "{{ app_user }}"
     mode: "0644"
 
-- name: Publish the bundle to the web root
-  ansible.builtin.copy:
-    src: "{{ app_root }}/client/dist/"
-    dest: /usr/share/nginx/html/
-    remote_src: true
-    owner: root
-    group: root
-    mode: "0644"
-    directory_mode: "0755"
-
-- name: Ensure the web root is traversable
+- name: Ensure the web root's parent is traversable
   ansible.builtin.file:
-    path: /usr/share/nginx/html
+    path: /var/www
     state: directory
     owner: root
     group: root
     mode: "0755"
+
+- name: Create the web root
+  ansible.builtin.file:
+    path: "{{ web_root }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Publish the bundle to the web root
+  ansible.builtin.copy:
+    src: "{{ app_root }}/client/dist/"
+    dest: "{{ web_root }}/"
+    remote_src: true
+    owner: root
+    group: root
+    # u=rwX,go=rX: 0755 on directories, 0644 on files.
+    mode: "u=rwX,go=rX"
 
 - name: Install the storefront site configuration
   ansible.builtin.template:

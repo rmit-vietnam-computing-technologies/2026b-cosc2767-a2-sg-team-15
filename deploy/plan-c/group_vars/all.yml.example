@@ -90,6 +90,10 @@ db_password: REPLACE_WITH_DATABASE_PASSWORD
 # publicly routable, and would then require CORS.
 web_api_base_url: "/api"
 
+# Where the built SPA is served from. Deliberately not /usr/share/nginx/html:
+# that directory belongs to the nginx package and ships its own files.
+web_root: /var/www/rmit-store
+
 # --- Demo data -------------------------------------------------------------
 
 seed_demo_data: true
