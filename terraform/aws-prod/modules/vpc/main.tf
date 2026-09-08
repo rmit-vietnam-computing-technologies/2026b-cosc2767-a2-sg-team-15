@@ -7,32 +7,34 @@ data "aws_ec2_instance_type_offerings" "t3micro_available" {
 }
 
 resource "aws_vpc" "main" {
-  cidr_block = "10.0.36.0/24"
+  cidr_block = "10.0.67.0/24"
   enable_dns_support = true
   enable_dns_hostnames = true
   tags = {
-    Name = "test-vpc"
+    Name = "prod-vpc"
   }
 }
 
 resource "aws_subnet" "public" {
-  count = 1
+  count = 2
   vpc_id = aws_vpc.main.id
   availability_zone = data.aws_ec2_instance_type_offerings.t3micro_available.locations[count.index]
   cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 2, count.index)
   map_public_ip_on_launch = true
   tags = {
-    Name = "pub-subnet1"
+    Name = "pub-subnet${count.index}"
   }
 }
+
+
 
 resource "aws_subnet" "private" {
   count = 2
   vpc_id = aws_vpc.main.id
   availability_zone = data.aws_ec2_instance_type_offerings.t3micro_available.locations[count.index]
-  cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 2, count.index+1)
+  cidr_block = cidrsubnet(aws_vpc.main.cidr_block, 2, count.index+2)
   tags = {
-    Name = "private_subnet"
+    Name = "priv-subnet${count.index}"
   }
 }
 
