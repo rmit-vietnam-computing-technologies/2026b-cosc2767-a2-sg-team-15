@@ -12,8 +12,8 @@ data "aws_ami" "debian" {
     owners = ["136693071363"]
 }
 
-resource "aws_security_group" "public_sg" {
-  name = "public-sg"
+resource "aws_security_group" "jenkins_sg" {
+  name = "jenkins-sg"
   description = "Allow web and SSH traffic"
   vpc_id = var.vpc_id
 
@@ -48,17 +48,26 @@ resource "aws_security_group" "public_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
-resource "aws_instance" "public_main" {
-  ami = data.aws_ami.debian.id
-  instance_type = "t3.micro"
-  key_name = var.keypair_name
-  subnet_id = var.vpc_public_subnet_id
-  vpc_security_group_ids = [aws_security_group.public_sg.id]
 
-  tags = {
-    Name = "nginx-nat instance"
+resource "aws_security_group" "jenkins_buildnode_sg" {
+  # Only allow outbound internet access for downloading packages
+  # And ssh for initial Ansible setup
+  ingress {
+    description = "SSH"
+    from_port = 22
+    to_port = 22
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
 
 resource "aws_instance" "public_jenkins" {
   ami = data.aws_ami.debian.id
@@ -69,5 +78,17 @@ resource "aws_instance" "public_jenkins" {
 
   tags = {
     Name = "jenkins instance"
+  }
+}
+
+resource "aws_instance" "lim_public_jenkins_buildnode" {
+  ami = data.aws_ami.debian.id
+  instance_type = "t3.micro"
+  key_name = var.keypair_name
+  subnet_id = var.vpc_public_subnet_id
+  vpc_security_group_ids = [aws_security_group.jenkins_buildnode_sg]
+
+  tags = {
+    Name = "jenkins build node instance"
   }
 }
