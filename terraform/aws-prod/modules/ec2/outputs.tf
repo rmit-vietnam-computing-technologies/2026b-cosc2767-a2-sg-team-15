@@ -3,8 +3,13 @@ output "pub_sg_id" {
   value = aws_security_group.public_sg.id
 }
 
-output "main_instance_id" {
-  description = "The ID of the EC2 NAT/nginx instance"
+output "buildnode_sg_id" {
+  description = "The ID of the buildnode security group"
+  value = aws.security_group.jenkins_buildnode_sg.id
+}
+
+output "build_node_instance_id" {
+  description = "The ID of the EC2 build node instance"
   value = aws_instance.public_main.id
 }
 
@@ -13,8 +18,8 @@ output "jenkins_instance_id" {
   value = aws_instance.public_jenkins.id
 }
 
-output "main_instance_public_ip" {
-  description = "The public IP of the NAT/nginx instance"
+output "build_node_public_ip" {
+  description = "The public IP of the build node instance"
   value = aws_instance.public_main.public_ip
 }
 
