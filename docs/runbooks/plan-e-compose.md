@@ -25,8 +25,9 @@ fails. No instance, no SSH, no Ansible: the laptop is the host.
 > stack is serving in about 13 seconds — `db` healthy at 6.5 s, `migrate` exited
 > at 7.4 s, `api` healthy at 13.0 s, `web` started at 13.1 s.
 
-Angle-bracketed values like `<sha>` are placeholders. Substitute before
-pasting; bash reads `<x>` as a file redirect.
+Angle-bracketed values like `<sha>` are placeholders, and `<repo>` is
+wherever you cloned the repository. Substitute before pasting; bash reads
+`<x>` as a file redirect.
 
 ---
 
@@ -106,11 +107,16 @@ describes. Each is a decision, not a drift.
 
 ## 0. Before you run anything
 
-### 0.1 Docker Engine in WSL2
+### 0.1 Docker
 
-Docker Engine, not Docker Desktop: it is what the EC2 hosts will run, and
-Compose ships with it as a plugin. The official apt repository, not Ubuntu's
-`docker.io`, which lags.
+On WSL2 or Linux, Docker Engine rather than Docker Desktop: it is what the
+EC2 hosts will run, and Compose ships with it as a plugin. On macOS, Docker
+Desktop is the only option and every command below is identical. Either
+way, `docker compose version` must answer; if it does not, this section is
+for you.
+
+Engine from the official apt repository, not Ubuntu's `docker.io`, which
+lags:
 
 ```bash
 sudo apt update && sudo apt install -y ca-certificates curl
@@ -130,9 +136,12 @@ sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin d
 sudo usermod -aG docker $USER
 ```
 
-`ps -p 1 -o comm=` says `systemd` on this distro, so the daemon starts with
-it. Then **open a new terminal** — group membership does not apply to the
-shell that ran `usermod` — and confirm both halves answer:
+If `ps -p 1 -o comm=` says `systemd`, the daemon starts with the distro. If
+it says `init`, either enable systemd (`[boot] systemd=true` in
+`/etc/wsl.conf`, then `wsl --shutdown` from PowerShell) or add
+`sudo service docker start` to the ritual `docs/TESTING.md` already has for
+PostgreSQL. Then **open a new terminal** — group membership does not apply
+to the shell that ran `usermod` — and confirm both halves answer:
 
 ```bash
 id -nG | grep -o docker
@@ -161,7 +170,7 @@ drops the leading dot. This bit the session twice (`dockerignore`,
 ## 1. Configure
 
 ```bash
-cd ~/work/2026b-cosc2767-a2-sg-team-15
+cd <repo>
 cp .env.example .env
 python3 -c "import secrets; print(secrets.token_urlsafe(64))"   # paste as SECRET_KEY
 nano .env                                                         # SECRET_KEY, POSTGRES_PASSWORD, SEED_ADMIN_PASSWORD
@@ -301,7 +310,7 @@ whichever one answers. `migrate` still ran once.
 What this proves: the shared volume answers the "second replica breaks
 images" problem **on one host**. What it does not prove: anything about two
 hosts, where there is no shared disk. That is Plan D step 4 and S3.
-Evidence: `docs/evidence/plan-e/03-two-api-replicas.png`.
+Evidence: `docs/evidence/plan-e/two-api-replicas.png`.
 
 ### 5.3 The suite, the way CI will run it
 
@@ -335,11 +344,13 @@ and `migrate` reporting nothing to apply.
 
 ---
 
-## 7. The S3 rehearsal — not yet performed
+## 7. The S3 rehearsal
 
 `compose.s3.yaml` passes the Learner Lab's session credentials from the
 shell into `api` and `seed`, so the `USE_S3` switch can be exercised from a
-laptop before any instance exists:
+laptop before any instance exists. It was run on 08/09 as the first step of
+Plan D's two-instance session; `plan-d-docker.md` §4.3 is the full record,
+including the stale-test-image trap it found.
 
 ```bash
 export AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... AWS_SESSION_TOKEN=...
@@ -347,12 +358,10 @@ USE_S3=True AWS_STORAGE_BUCKET_NAME=<bucket> \
     docker compose -f compose.yaml -f compose.s3.yaml up -d --build
 ```
 
-What it should show: `/readyz/` reporting `storage: ok` against the real
-bucket, `seed` writing 47 objects, `image_url` pointing at S3, a browser
-loading it. What it exposes early: the region, the bucket policy, and whether
-`LabRole` reaches the bucket. As of 08/09 this has not been run; it is the
-first item of the Plan D step 4 session, and this section will be rewritten
-from that transcript.
+What it shows: `/readyz/` reporting `storage: ok` against the real bucket,
+`seed` writing 47 objects, `image_url` pointing at S3, a browser loading it.
+What it exposes early: the region, the bucket policy, and whether the
+account allows a public-read bucket at all.
 
 ---
 

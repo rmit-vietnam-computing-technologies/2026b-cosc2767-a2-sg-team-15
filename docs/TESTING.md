@@ -6,7 +6,7 @@ Assessment: Assignment 2
 Author: Vo Hoang Khanh
 ID: s3926310
 Created  date: 02/09/2026
-Last modified: 02/09/2026
+Last modified: 08/09/2026
 Acknowledgement: Drafted with Claude (Anthropic) in a guided session; every
   command in this file was run and its output verified before being written
   down. Tooling choices are justified separately in docs/adr/0001-testing-stack.md.
@@ -54,9 +54,9 @@ giveaway is a missing `(.venv)` in the prompt, and a plugin list with no
 `django-` or `cov-` in it.
 
 ```bash
-cd ~/work/2026b-cosc2767-a2-sg-team-15/server
+cd <repo>/server            # wherever you cloned the repository
 source .venv/bin/activate
-sudo service postgresql start
+sudo service postgresql start   # WSL without systemd; skip if `pg_isready` already answers
 ```
 
 First time on a machine:
@@ -65,6 +65,23 @@ First time on a machine:
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
 ```
+
+**Or skip the virtualenv and the local PostgreSQL entirely.** Since Plan E
+the whole suite runs inside the API image against a throwaway database,
+which is exactly how CI runs it and needs nothing on the laptop but Docker
+and a filled `.env` at the repository root:
+
+```bash
+cd <repo>
+mkdir -p server/test-reports
+docker compose -f compose.yaml -f compose.ci.yaml run --rm test                  # the full suite, coverage gate included
+docker compose -f compose.yaml -f compose.ci.yaml run --rm test pytest -m unit   # any pytest arguments after `test`
+```
+
+Same 322 tests, same 66.02%, same Python as production. `pytest.ini`,
+markers and the coverage gate all apply unchanged — the image copies them.
+`docs/runbooks/plan-e-compose.md` §5.3 has the details and the one trap
+(the `mkdir`).
 
 ---
 
