@@ -33,7 +33,7 @@ pipeline {
                         "
                         
                         scp -r -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem \
-                            webapp/client/* \
+                            webapp/client/. \
                             ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP}:/home/ec2-user/client/
 
                     """
