@@ -23,10 +23,10 @@ RMIT University Vietnam
 Course: COSC2767|COSC2805 Systems Deployment and Operations
 Semester: 2026B
 Assessment: Assignment 2
-Author: Vo Hoang Khanh
-ID: s3926310
-Created  date: 02/09/2026
-Last modified: 02/09/2026
+Author: 
+ID: 
+Created  date: 
+Last modified: 
 Acknowledgement: <what you used — docs, Stack Overflow answers, an LLM, a teammate>
 ```
 

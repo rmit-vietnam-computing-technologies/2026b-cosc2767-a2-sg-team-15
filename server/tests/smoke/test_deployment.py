@@ -199,28 +199,50 @@ def test_the_catalogue_has_been_seeded(http, base_url):
 # ===========================================================================
 
 
-def test_product_image_urls_point_at_this_deployment(http, base_url):
+def test_product_image_urls_are_absolute_and_load(http, base_url):
     """[T15-BE-MEDIA][REQ-5] The nastiest misconfiguration in the README.
 
-    Image URLs are built at serialization time from the incoming request, so
-    they are right only if the request arrived with the right ``Host``. Get
-    the proxy headers wrong and every product image comes back as
-    ``http://127.0.0.1:8000/media/...`` — which loads perfectly when you curl
-    it from the instance and is a broken image in every browser on earth.
+    Image URLs are built at serialization time. On local disk they come from
+    the incoming request's ``Host``: get the proxy headers wrong and every
+    product image is ``http://127.0.0.1:8000/media/...`` — which loads
+    perfectly when you curl it from the instance and is a broken image in
+    every browser on earth. On S3 they come from the bucket, and the failure
+    is different: a bucket policy that does not allow public reads gives a
+    403 to the same browser.
 
-    Asserting against ``base_url`` rather than a hardcoded host makes this
-    the same test on localhost, staging and production.
+    One assertion covers both: the URL is absolute, and fetching it from
+    here returns an image. A loopback host is only acceptable when the
+    deployment itself is on loopback (a laptop).
     """
+    from urllib.parse import urlparse
+
     results = http.get(f"{base_url}/api/products/").json()["results"]
     with_images = [row for row in results if row.get("image_url")]
 
     if not with_images:
         pytest.skip("no seeded product carries an image")
 
+    deployment_host = urlparse(base_url).hostname
     for row in with_images[:5]:
-        assert row["image_url"].startswith(base_url), (
-            f"{row['name']!r} has image_url {row['image_url']!r}, which is not on "
-            f"{base_url} — check USE_X_FORWARDED_HOST and the proxy's Host header"
+        url = row["image_url"]
+        assert url.startswith(("http://", "https://")), (
+            f"{row['name']!r} has a relative image_url {url!r}"
+        )
+        host = urlparse(url).hostname
+        if host in {"127.0.0.1", "localhost", "::1"}:
+            assert host == deployment_host, (
+                f"{row['name']!r} has image_url {url!r} on loopback while the "
+                f"deployment is {base_url} — check USE_X_FORWARDED_HOST and the "
+                f"proxy's Host header"
+            )
+        response = http.get(url)
+        assert response.status_code == 200, (
+            f"{row['name']!r}: GET {url} returned {response.status_code} — on "
+            f"local disk, check the proxy's /media/ location; on S3, the bucket "
+            f"policy for media/* or AWS_S3_QUERYSTRING_AUTH"
+        )
+        assert response.headers.get("Content-Type", "").startswith("image/"), (
+            f"{row['name']!r}: {url} answered 200 but not with an image"
         )
 
 
