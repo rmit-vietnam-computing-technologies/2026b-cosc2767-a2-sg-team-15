@@ -1,15 +1,28 @@
-# DO NOT BUILD INSIDE CONTAINER, ONLY TAKE FROM EXISTING /dist
-# Get a ngix docker image, version alpine
-FROM nginx:alpine 
+# Build inside container
+# Builder environment to build Vue frontend
+FROM node:20-alpine AS builder
 
-# Copy existing /dst created from npm run build
-COPY dist /usr/share/nginx/html
+WORKDIR /app
 
-# Copy runtime config of compiled Vue into current container
-COPY config.js /usr/share/nginx/html/config.js
+# Copy package.json and packagelock.json to install related dependencies first
+COPY package*.json ./
+RUN npm install
 
-# Configure Ngix in order for Ngix to listen in on Port 80, configure the default webpage access of html folder. /dist already has a index.html file so It will find it there
-RUN echo 'server { \ 
+# Copy existing source code in the current ec2-user host dirctory to /app in builder directory
+COPY . .
+RUN npm run build
+
+# Use nginx to serve frontend
+FROM nginx:alpine
+
+# Copy built /dist into html of nginx
+COPY --from=builder /app/dist/ /usr/share/nginx/html/
+
+# Copy runtime config
+COPY public/config.js /usr/share/nginx/html/config.js
+
+# Nginx
+RUN echo 'server { \
     listen 80; \
     root /usr/share/nginx/html; \
     index index.html; \

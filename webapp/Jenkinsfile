@@ -9,17 +9,6 @@ pipeline {
     }
 
     stages {
-        // STAGE 1: BUILD FRONTEND 
-        stage('Build Frontend') {
-            steps {
-                echo ' Building Vue application inside client directory. Producing a /dist folder for frontend deployment'
-                dir('webapp/client') {
-                    sh 'npm install'
-                    sh 'npm run build'
-                }
-                echo 'Build completed'
-            }
-        }
 
         // STAGE 2: TEST FRONTEND (PLACEHOLDER)
         stage('Test Frontend') {
@@ -44,9 +33,7 @@ pipeline {
                         "
                         
                         scp -r -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem \
-                            webapp/client/dist \
-                            webapp/client/public/config.js \
-                            webapp/client/Dockerfile \
+                            webapp/client/ \
                             ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP}:/home/ec2-user/client/
 
                     """
