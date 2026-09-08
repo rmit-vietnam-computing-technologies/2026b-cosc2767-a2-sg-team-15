@@ -20,3 +20,6 @@
 ---
 
 **Please note:** Branch protection rules are active. You must make a PR to merge into main.
+
+- **DO NOT USE CONVENTIONAL COMMITS.** Write short commit messages (idealy would fit on GitHub preview) with extended changes on newlines.
+- Remember to add the authorship header for the files *you* created.
