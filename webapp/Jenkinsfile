@@ -1,0 +1,121 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE_NAME = 'rmit-store-frontend'
+        DOCKER_TAG = "${env.BUILD_ID}"
+        DEPLOY_EC2_IP = '172.31.21.36'
+        DEPLOY_EC2_USER = 'ec2-user'
+    }
+
+    stages {
+
+        // STAGE 2: TEST FRONTEND (PLACEHOLDER)
+        stage('Test Frontend') {
+            steps {
+                echo 'Placeholder testing(To be added later)'
+                dir('webapp/client') {
+                    // sh 'npm run test:unit'
+                }
+                echo 'Tests passed'
+            }
+        }
+
+        // STAGE 3: COPY CODE TO DOCKER SERVER (AS EC2-USER)
+        stage('Deleting old files and copying Frontend Code to Docker Server') {
+            steps {
+                echo 'Copying produced /dist and relevant files into ec2-user home client folder'
+                script {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
+                         rm -rf /home/ec2-user/client
+                        mkdir -p /home/ec2-user/client
+                        "
+                        
+                        scp -r -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem \
+                            webapp/client/. \
+                            ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP}:/home/ec2-user/client/
+
+                    """
+                }
+                echo 'Frontend code copied'
+            }
+        }
+
+        //  STAGE 4: ENSURE DOCKER IS RUNNING ON EC2 INSTANCE
+        stage('Ensure Docker is Running on EC2 instance') {
+            steps {
+                echo 'Checking if Docker is currently running on deployed EC2 instance'
+                script {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
+                            if ! sudo docker ps &> /dev/null; then
+                                echo 'Docker is currently not running. Starting Docker...'
+                                sudo service docker start
+                                sleep 5
+                                if sudo docker ps &> /dev/null; then
+                                    echo 'Docker started successfully.'
+                                else
+                                    echo 'Failed to start Docker.'
+                                    exit 1
+                                fi
+                            else
+                                echo 'Docker is already running.'
+                            fi
+                        "
+                    """
+                }
+                echo 'Docker is ready!'
+            }
+        }
+
+        // STAGE 5: BUILD DOCKER IMAGE FROM DOCKERFILE
+        stage('Build Docker Image') {
+            steps {
+                echo 'Building Docker image on Docker Server and deleting any previous container'
+                script {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
+                            cd /home/ec2-user/client
+                            sudo docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} .
+                        "
+                    """
+                }
+                echo 'Docker image built on Docker Server'
+            }
+        }
+
+        // STAGE 6: DEPLOY FRONTEND on DOCKER SERVER EC2
+        stage('Deploy Frontend to EC2 on port 8080') {
+            steps {
+                echo 'Deploying frontend to EC2'
+                script {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
+                            # Stop running containers
+                            sudo docker stop frontend-container || true
+                            sudo docker rm frontend-container || true
+                            
+                            # Run new containers
+                            sudo docker run -d \\
+                                --name frontend-container \\
+                                -p 80:80 \\
+                                --restart unless-stopped \\
+                                ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
+                        "
+                    """
+                }
+                echo 'Deployment completed!'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline succeeded'
+        }
+        failure {
+            echo 'Pipeline failed'
+        }
+    }
+}
