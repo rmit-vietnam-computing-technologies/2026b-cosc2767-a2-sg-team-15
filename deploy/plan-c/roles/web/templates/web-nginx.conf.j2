@@ -15,7 +15,7 @@ Acknowledgement: The SPA half of deploy/plan-b/nginx-rmit-store.conf, with the
 # MANAGED BY ANSIBLE -- edits here are overwritten on the next run.
 # Source: deploy/plan-c/roles/web/templates/web-nginx.conf.j2
 
-# [T15-BE-NGINX][REQ-7] The public entry point.
+# The public entry point.
 #
 # One difference from Plan B, and it is the whole of the split: the Django
 # locations proxy to {{ api_private_ip }}:80 instead of 127.0.0.1:8000.
@@ -77,7 +77,7 @@ server {
     location ~ ^/(api|admin|healthz|readyz|media|static)(/|$) {
         proxy_pass http://rmit_api;
 
-        # [T15-BE-HOSTHDR] $host is this instance's public address, which is
+        # $host is this instance's public address, which is
         # what a browser typed. The API tier forwards it unchanged to Django,
         # which builds image_url from it. Send $proxy_host instead and every
         # product image points at a private IP -- broken in every browser,

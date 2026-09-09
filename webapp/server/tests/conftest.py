@@ -35,7 +35,7 @@ from apps.merchants.models import Merchant, MerchantStatus
 
 @pytest.fixture(autouse=True)
 def _isolated_media(settings, tmp_path):
-    """[T15-BE-MEDIA] Every test writes uploads to its own directory.
+    """Every test writes uploads to its own directory.
 
     Autouse, because a single test that forgets it pollutes ``server/media/``
     on a developer's laptop and leaves the working tree dirty. tmp_path is
@@ -146,7 +146,7 @@ def merchant(db, merchant_brand):
 
 @pytest.fixture
 def rival_merchant(db):
-    """[REQ-5] A second approved seller, with a brand of their own.
+    """A second approved seller, with a brand of their own.
 
     Exists so the queryset-scoping tests have somebody else's object to ask
     for. One merchant proves a seller can reach their own products; it takes
@@ -173,7 +173,7 @@ def rival_merchant(db):
 
 @pytest.fixture
 def deactivated_merchant(db):
-    """[REQ-5] A seller whose approval was withdrawn.
+    """A seller whose approval was withdrawn.
 
     Role is still MERCHANT and the Merchant record still exists, so anything
     that checks only the role lets this account through. It must not be able
@@ -257,7 +257,7 @@ def product(make_product):
 
 @pytest.fixture
 def approved_card():
-    """[REQ-5] Simulated gateway, so no provider, account or network call.
+    """Simulated gateway, so no provider, account or network call.
 
     That is what makes these numbers safe to fire repeatedly from CI and from
     post-deploy checks on a private subnet.

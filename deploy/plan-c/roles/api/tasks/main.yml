@@ -28,7 +28,7 @@
       - libpq-devel
     state: present
 
-# [T15-BE-HOSTHDR] Read this instance's own addresses from IMDS.
+# Read this instance's own addresses from IMDS.
 #
 # IMDSv2 is Required on these instances, so the token exchange is mandatory.
 # This module handles it; a plain curl against 169.254.169.254 without a
@@ -49,7 +49,7 @@
   become: false
   register: api_checkout
 
-# [ADV-3] The commit that is actually deployed, read from the checkout rather
+# The commit that is actually deployed, read from the checkout rather
 # than passed in. GET /api/version/ reports this, which is how a deploy is
 # verified from outside the instance and how a blue/green cutover is
 # confirmed. A value supplied by hand can be wrong; this one cannot.
@@ -70,7 +70,7 @@
   become_user: "{{ app_user }}"
   notify: Restart rmit-api
 
-# [T15-BE-SECRETS] Configuration to /etc, root-owned, mode 600.
+# Configuration to /etc, root-owned, mode 600.
 #
 # Serving media off disk needs the application user's home directory to be
 # world-traversable (below), so a .env inside the checkout would be readable
@@ -154,7 +154,7 @@
     - seed_demo_data | bool
     - api_seed is changed
 
-# [T15-BE-STATIC] collectstatic must run under the SAME settings module as
+# collectstatic must run under the SAME settings module as
 # the server. Dev uses StaticFilesStorage and writes no manifest; prod uses
 # whitenoise's manifest storage and requires staticfiles.json. Get this wrong
 # and /static/admin/css/base.css still returns 200 while /admin/login/
@@ -178,7 +178,7 @@
     group: "{{ app_user }}"
     mode: "0755"
 
-# [T15-BE-MEDIA] nginx runs as its own user and must traverse into the
+# nginx runs as its own user and must traverse into the
 # application user's home to reach media/ and staticfiles/.
 #
 # Mode 0711 grants traverse without read, so nothing else in the home

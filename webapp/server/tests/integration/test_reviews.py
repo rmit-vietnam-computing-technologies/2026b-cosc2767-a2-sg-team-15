@@ -13,7 +13,7 @@
 #   Django aggregation, https://docs.djangoproject.com/en/5.1/topics/db/aggregation/
 
 """
-[T15-BE-TEST][REQ-5] Integration tests: reviews and moderation.
+Integration tests: reviews and moderation.
 
 Ratings are computed at query time from approved reviews rather than stored
 on the product, which means moderating a review has to change the stars
@@ -151,7 +151,7 @@ def test_a_rating_outside_one_to_five_is_refused(as_user, member, product, ratin
 def test_rejecting_a_review_recomputes_the_product_average(
     api, as_user, admin, reviewed_product
 ):
-    """[REQ-5] The moderation queue changes what the shop grid shows.
+    """The moderation queue changes what the shop grid shows.
 
     Nothing is stored on the product, so there is no denormalised column to
     fall out of step — rejecting the one-star review moves the average from
@@ -252,7 +252,7 @@ def test_deleting_a_review_removes_it_from_the_average(
 
 
 def test_wishlist_toggle_is_idempotent(as_user, member, product):
-    """[REQ-5] Two likes for one product must not become two rows.
+    """Two likes for one product must not become two rows.
 
     The unique constraint on (user, product) plus ``update_or_create`` is
     what makes this safe. The original emulated an upsert by hand and could

@@ -10,7 +10,7 @@
 #   https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_handlers.html
 
 ---
-# [T15-BE-ANSIBLE] Handlers run once at the end of a play, however many
+# Handlers run once at the end of a play, however many
 # tasks notified them. Restarting nginx after each of five config changes
 # would take the site down five times for no reason.
 

@@ -10,7 +10,7 @@
 #   author reviewed and verified the resulting report. Reference:
 #   coverage.py configuration reference, https://coverage.readthedocs.io/en/latest/config.html
 
-# [T15-BE-TEST][REQ-5] What counts as covered.
+# What counts as covered.
 #
 # Measuring only apps/ keeps the number honest. Including migrations and
 # settings inflates it with code that is either generated or executed by the

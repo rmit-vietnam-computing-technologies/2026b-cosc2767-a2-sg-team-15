@@ -15,7 +15,7 @@
 #   django-environ, https://django-environ.readthedocs.io/en/latest/
 
 """
-[T15-BE-TEST][REQ-5] Configuration-failure tests.
+Configuration-failure tests.
 
 The brief asks for tests covering "misconfiguration that only shows up in a
 deployed environment". This module is that. Nothing here is about business
@@ -120,7 +120,7 @@ def _booted_settings(result):
 
 @pytest.mark.slow
 def test_production_refuses_to_boot_with_the_shipped_secret_key():
-    """[REQ-5] The dev key is public. Booting on it is a security incident.
+    """The dev key is public. Booting on it is a security incident.
 
     Refusing to start is the correct behaviour rather than an inconvenience:
     a process that never becomes healthy cannot be rolled into the load
@@ -136,7 +136,7 @@ def test_production_refuses_to_boot_with_the_shipped_secret_key():
 
 @pytest.mark.slow
 def test_production_refuses_to_boot_without_allowed_hosts():
-    """[REQ-5] An empty value counts as unset.
+    """An empty value counts as unset.
 
     ``env.list`` returns ``[]`` for both a missing variable and an empty
     string, so ``ALLOWED_HOSTS=`` in a compose file or a systemd unit is
@@ -184,7 +184,7 @@ def test_development_settings_have_no_such_guard():
 
 @pytest.mark.slow
 def test_production_is_configured_for_a_load_balancer():
-    """[T15-BE-HOSTHDR] An ALB terminates TLS and forwards plain HTTP.
+    """An ALB terminates TLS and forwards plain HTTP.
 
     Without these two, Django believes every request is insecure:
     ``SECURE_SSL_REDIRECT`` loops forever and ``build_absolute_uri`` emits
@@ -210,7 +210,7 @@ def test_production_does_not_expose_the_browsable_api():
 
 @pytest.mark.slow
 def test_build_metadata_comes_from_the_environment():
-    """[T15-BE-HEALTH][ADV-3] What ``/api/version/`` will report after a deploy.
+    """What ``/api/version/`` will report after a deploy.
 
     These two variables are how a blue/green cutover is verified from outside
     the instance, so they have to arrive from the environment rather than
@@ -235,7 +235,7 @@ def test_build_metadata_comes_from_the_environment():
 
 
 def test_a_host_outside_allowed_hosts_is_rejected(api, settings):
-    """[T15-BE-HOSTHDR][REQ-5] 400, before the request reaches a view.
+    """400, before the request reaches a view.
 
     This is the single most common cause of a deployment that "works on the
     instance but not through the load balancer": curling localhost sends
@@ -292,7 +292,7 @@ def test_a_wildcard_subdomain_entry_matches(api, settings):
 
 
 def test_healthz_touches_nothing(api, db, django_assert_num_queries):
-    """[T15-BE-HEALTH] Liveness must not depend on the database.
+    """Liveness must not depend on the database.
 
     A liveness probe that checks its dependencies restarts a perfectly
     healthy application server because the database was briefly slow, turning
@@ -318,7 +318,7 @@ def test_readyz_reports_healthy_when_dependencies_are_up(api, db):
 
 
 def test_readyz_returns_503_when_the_database_is_unreachable(api, db, monkeypatch):
-    """[T15-BE-HEALTH][REQ-5] Failing readiness takes the instance out of
+    """Failing readiness takes the instance out of
     rotation without killing it, so it can recover and rejoin.
 
     The cursor is made to raise the exception a real outage produces, rather
@@ -339,7 +339,7 @@ def test_readyz_returns_503_when_the_database_is_unreachable(api, db, monkeypatc
 
 
 def test_healthz_stays_up_while_readyz_is_down(api, db, monkeypatch):
-    """[REQ-5] The two probes must disagree, and this is the state where it matters.
+    """The two probes must disagree, and this is the state where it matters.
 
     A load balancer probing ``/healthz/`` keeps sending traffic to an
     instance that cannot serve it; one probing ``/readyz/`` for liveness
@@ -394,7 +394,7 @@ def test_the_probes_need_no_credentials(api, db, settings):
 
 
 def test_version_endpoint_reports_the_running_build(api, settings):
-    """[ADV-3] How a blue/green cutover is verified from outside the box."""
+    """How a blue/green cutover is verified from outside the box."""
     settings.APP_VERSION = "2.4.1"
     settings.GIT_COMMIT = "a71dea9"
 

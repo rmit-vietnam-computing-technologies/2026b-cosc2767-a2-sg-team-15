@@ -14,7 +14,7 @@
 #   pytest parametrize, https://docs.pytest.org/en/stable/how-to/parametrize.html
 
 """
-[T15-BE-TEST][REQ-5] Unit tests: the payment gateway in isolation.
+Unit tests: the payment gateway in isolation.
 
 ``apps/orders/payments.py`` is the cleanest unit-test target in the codebase.
 No network, no database, no clock except where injected — every function is
@@ -296,7 +296,7 @@ def test_spacing_in_the_number_is_tolerated():
 
 
 def test_charge_carries_no_card_number():
-    """[REQ-5] The PAN is never stored, never returned.
+    """The PAN is never stored, never returned.
 
     Same rule a real integration works under: keep the brand and the last four
     digits, discard everything else. This asserts it against every field of
@@ -351,7 +351,7 @@ def test_every_documented_decline_card_is_refused(number):
 
 
 def test_a_decline_is_402_not_400():
-    """[REQ-5] The status code carries meaning the SPA depends on.
+    """The status code carries meaning the SPA depends on.
 
     400 means the request was malformed — fix your typo. 402 means the request
     was fine and the payment failed — try a different card. Collapsing the two

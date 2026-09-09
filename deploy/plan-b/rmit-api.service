@@ -14,7 +14,7 @@
 #   systemd.exec, https://www.freedesktop.org/software/systemd/man/systemd.exec.html
 #   gunicorn deployment, https://docs.gunicorn.org/en/stable/deploy.html
 
-# [T15-BE-SYSTEMD][REQ-7] The API as a managed service.
+# The API as a managed service.
 #
 # Install to /etc/systemd/system/rmit-api.service, then:
 #   sudo systemctl daemon-reload
@@ -40,7 +40,7 @@ User=ec2-user
 Group=ec2-user
 WorkingDirectory=/home/ec2-user/2026b-cosc2767-a2-sg-team-15/webapp/server
 
-# [T15-BE-SECRETS] Secrets live in a root-owned file, mode 600, outside the
+# Secrets live in a root-owned file, mode 600, outside the
 # checkout.
 #
 # Serving media off disk requires `chmod o+x /home/ec2-user`, which makes the

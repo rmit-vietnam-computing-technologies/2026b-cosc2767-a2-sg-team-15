@@ -14,7 +14,7 @@
 #   pytest parametrize, https://docs.pytest.org/en/stable/how-to/parametrize.html
 
 """
-[T15-BE-TEST][REQ-5] The authorisation matrix.
+The authorisation matrix.
 
 Every endpoint, against every role, asserting the exact status code. This is
 the suite that justifies choosing pytest over ``manage.py test``: written as
@@ -164,7 +164,7 @@ MATRIX_PARAMS = [
 def test_authorisation_matrix(
     method, path, expected, role, api, as_user, member, merchant, admin
 ):
-    """[REQ-5] One row of the matrix: this role, this endpoint, this code."""
+    """One row of the matrix: this role, this endpoint, this code."""
     client = _client_for(role, api, as_user, member, merchant, admin)
 
     response = getattr(client, method)(path, {}, format="json")
@@ -196,7 +196,7 @@ def test_merchant_sees_only_their_own_products(
 def test_another_sellers_product_is_404_not_403(
     as_user, merchant, rival_merchant, make_product
 ):
-    """[REQ-5] The endpoint must not confirm that the id exists.
+    """The endpoint must not confirm that the id exists.
 
     403 would answer a question the caller is not entitled to ask: it says
     "this row is real, you just cannot have it". Scoping the queryset makes
@@ -251,7 +251,7 @@ def test_admin_sees_every_sellers_products(
     ],
 )
 def test_deactivated_merchant_is_refused(as_user, deactivated_merchant, method, path):
-    """[REQ-5] The case a role-only permission check waves straight through.
+    """The case a role-only permission check waves straight through.
 
     The role is still MERCHANT and the Merchant record still exists — only
     ``is_active`` changed. ``IsMerchant`` checks all three, which is why an

@@ -14,7 +14,7 @@
 #   pytest-django database access, https://pytest-django.readthedocs.io/en/latest/database.html
 
 """
-[T15-BE-TEST][REQ-5] Integration tests: the storefront API against the database.
+Integration tests: the storefront API against the database.
 
 The brief asks for a test proving "the shop endpoint actually returns
 products, proving the API-to-database connection". That is the first test
@@ -45,7 +45,7 @@ pytestmark = pytest.mark.integration
 
 
 def test_shop_endpoint_returns_products_from_the_database(api, make_product):
-    """[REQ-5] Frontend to backend to database, in one assertion.
+    """Frontend to backend to database, in one assertion.
 
     Rows are written through the ORM and read back through HTTP. Nothing is
     stubbed, so a pass means the connection, the schema and the serializer
@@ -119,7 +119,7 @@ def test_inactive_product_detail_returns_404(api, make_product):
 
 
 def test_inactive_brand_hides_its_products(api, brand, make_product):
-    """[REQ-5] Deactivating a seller's brand takes their catalogue with it.
+    """Deactivating a seller's brand takes their catalogue with it.
 
     This is the rule that makes admin deactivation of a merchant actually
     mean something. The product rows are untouched and still active in their

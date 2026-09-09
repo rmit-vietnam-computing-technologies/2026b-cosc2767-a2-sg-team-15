@@ -11,7 +11,7 @@
 #   pytest documentation, https://docs.pytest.org/
 #   pytest-django documentation, https://pytest-django.readthedocs.io/
 
-# [T15-BE-TEST][REQ-5] Test-only dependencies.
+# Test-only dependencies.
 #
 # Separate from requirements.txt on purpose. The runtime image must not ship a
 # test runner: it is dead weight in every container and it widens the attack

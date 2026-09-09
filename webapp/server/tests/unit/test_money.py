@@ -13,7 +13,7 @@
 #   pytest-django settings fixture, https://pytest-django.readthedocs.io/en/latest/helpers.html
 
 """
-[T15-BE-TEST][REQ-5] Unit tests: server-side money and tax.
+Unit tests: server-side money and tax.
 
 ``money()`` and ``tax_for()`` are two short functions, which makes it tempting
 to skip them. They are the two places a rounding rule can be wrong by a cent
@@ -67,7 +67,7 @@ def test_money_always_returns_two_decimal_places(value, expected):
     ],
 )
 def test_money_rounds_half_up_not_half_even(value, expected):
-    """[REQ-5] The rounding rule, pinned.
+    """The rounding rule, pinned.
 
     Python's default for ``Decimal.quantize`` is ROUND_HALF_EVEN — banker's
     rounding — which sends exact halves to the nearest even digit. A till
@@ -79,7 +79,7 @@ def test_money_rounds_half_up_not_half_even(value, expected):
 
 
 def test_money_on_a_float_is_not_the_same_as_on_a_string():
-    """[REQ-5] Why prices are never floats.
+    """Why prices are never floats.
 
     ``Decimal(2.675)`` captures the binary approximation the float already is,
     which is slightly below 2.675, so half-up rounding takes it *down* to 2.67.
@@ -132,7 +132,7 @@ def test_tax_is_the_rate_applied_and_rounded(settings, amount, rate, expected):
 
 
 def test_tax_reads_the_rate_from_settings(settings):
-    """[T15-BE-SECRETS] The rate is configuration, not code.
+    """The rate is configuration, not code.
 
     ``SALES_TAX_RATE`` comes from the environment, so staging and production
     can differ without a rebuild. That also means a deployment can ship the

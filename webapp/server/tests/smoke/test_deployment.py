@@ -14,7 +14,7 @@
 #   Django deployment checklist, https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 """
-[T15-BE-TEST][REQ-5][REQ-4] Deployment smoke tests: the API tier.
+Deployment smoke tests: the API tier.
 
 The brief calls these "the cheapest and most valuable tests in the whole
 pipeline", and it is right. Every assertion here fails for a reason no amount
@@ -58,7 +58,7 @@ def test_healthz_reports_alive(http, base_url):
 
 
 def test_readyz_reports_every_dependency_healthy(http, base_url):
-    """[REQ-5] The database and storage, checked from inside the deployment.
+    """The database and storage, checked from inside the deployment.
 
     This is the assertion that catches a wrong ``DATABASE_URL``, a security
     group that does not allow 5432 from the API instance, an RDS endpoint
@@ -101,7 +101,7 @@ def test_version_endpoint_answers(http, base_url):
 
 
 def test_the_deployed_commit_is_the_one_we_shipped(http, base_url):
-    """[REQ-4][ADV-3] The check that makes a promotion decision trustworthy.
+    """The check that makes a promotion decision trustworthy.
 
     Without it, "the deploy succeeded" means only that a deploy command
     exited zero. An image that failed to pull, a Swarm service that rolled
@@ -140,7 +140,7 @@ def test_the_deployed_version_is_the_one_we_shipped(http, base_url):
 
 
 def test_static_files_were_collected(http, base_url):
-    """[T15-BE-STATIC] ``collectstatic`` ran, and something is serving the result.
+    """``collectstatic`` ran, and something is serving the result.
 
     The visible symptom of skipping it is the Django admin rendering as
     unstyled black-on-white text — cosmetic-looking, and in fact a missing
@@ -169,7 +169,7 @@ def test_the_api_docs_are_served(http, base_url):
 
 
 def test_migrations_ran(http, base_url):
-    """[T15-BE-MIGRATE] An empty schema answers 500, not 200.
+    """An empty schema answers 500, not 200.
 
     ``/readyz/`` opens a cursor and runs ``SELECT 1``, which succeeds against
     a database with no tables at all — so readiness does not prove ``migrate``
@@ -200,7 +200,7 @@ def test_the_catalogue_has_been_seeded(http, base_url):
 
 
 def test_product_image_urls_are_absolute_and_load(http, base_url):
-    """[T15-BE-MEDIA][REQ-5] The nastiest misconfiguration in the README.
+    """The nastiest misconfiguration in the README.
 
     Image URLs are built at serialization time. On local disk they come from
     the incoming request's ``Host``: get the proxy headers wrong and every
@@ -247,7 +247,7 @@ def test_product_image_urls_are_absolute_and_load(http, base_url):
 
 
 def test_debug_mode_is_off(http, base_url):
-    """[REQ-5] A deployment running with DEBUG=True leaks the whole application.
+    """A deployment running with DEBUG=True leaks the whole application.
 
     Django's debug 404 lists every URL pattern in the project, and its 500
     renders local variables — including settings and, on a bad day, a
@@ -278,7 +278,7 @@ def test_debug_mode_is_off(http, base_url):
 
 
 def test_the_api_answers_on_the_host_we_reach_it_by(http, base_url):
-    """[T15-BE-HOSTHDR] ALLOWED_HOSTS accepts the name actually in use.
+    """ALLOWED_HOSTS accepts the name actually in use.
 
     A 400 here is the load-balancer trap: the instance is healthy, the
     application is fine, and every request through this hostname is refused
@@ -322,7 +322,7 @@ def test_a_member_can_authenticate(member_token):
 
 
 def test_a_declined_card_is_safe_to_fire_after_every_deploy(http, base_url, auth):
-    """[REQ-5] A full checkout attempt that costs nothing and proves everything.
+    """A full checkout attempt that costs nothing and proves everything.
 
     The gateway is simulated, and a declined card leaves no order row and
     takes no stock. That is what makes this safe to run against production on

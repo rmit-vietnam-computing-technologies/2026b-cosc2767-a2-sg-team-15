@@ -47,7 +47,7 @@ x-api-build: &api-build
     GIT_COMMIT: ${GIT_COMMIT:-dev}
     APP_VERSION: ${APP_VERSION:-1.0.0}
 
-# [T15-BE-SECRETS] Every variable the API image receives, named here and
+# Every variable the API image receives, named here and
 # nowhere else. Values are interpolated from .env; nothing is passed through
 # wholesale, so what a container can see is what this list says. The two
 # `:?` entries refuse to start the stack rather than start it with a
@@ -56,7 +56,7 @@ x-api-build: &api-build
 x-api-environment: &api-environment
   SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is not set -- copy .env.example to .env and fill it in}
   DATABASE_URL: postgres://${POSTGRES_USER:-rmit}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is not set -- see .env.example}@db:5432/${POSTGRES_DB:-rmit_store}
-  # [T15-BE-HOSTHDR] Four callers, four hosts. The public host is what a
+  # Four callers, four hosts. The public host is what a
   # browser types and what web forwards as Host; 127.0.0.1 is the readiness
   # check; `api` is anything that reaches gunicorn directly on the compose
   # network, such as a Prometheus scrape; `web` is the smoke suite when it is
@@ -70,7 +70,7 @@ x-api-environment: &api-environment
   # and the admin login loops silently. Flip the day TLS terminates in front.
   SESSION_COOKIE_SECURE: ${COOKIE_SECURE:-False}
   CSRF_COOKIE_SECURE: ${COOKIE_SECURE:-False}
-  # [T15-BE-MEDIA] Off by default: on one host the media volume below is the
+  # Off by default: on one host the media volume below is the
   # right answer. The two-instance run sets these in its own env file, and
   # compose.s3.yaml is the laptop rehearsal of that switch.
   USE_S3: ${USE_S3:-False}
@@ -83,7 +83,7 @@ x-api-environment: &api-environment
 
 services:
 
-  # [T15-BE-DB][REQ-2] PostgreSQL 16, matching the Plan C instance. A
+  # PostgreSQL 16, matching the Plan C instance. A
   # container here, RDS in Plan F -- docs/adr/0002-database-topology.md.
   # The volume is the only state on the host besides media.
   db:
@@ -104,7 +104,7 @@ services:
       start_period: 10s
     restart: unless-stopped
 
-  # [T15-BE-MIGRATE][REQ-2] Schema changes as a one-shot container.
+  # Schema changes as a one-shot container.
   #
   # Same image as api, different command, no restart policy: it runs to
   # completion and api waits for its exit code. Two api replicas therefore
@@ -129,7 +129,7 @@ services:
       <<: *api-environment
       WEB_CONCURRENCY: ${WEB_CONCURRENCY:-3}
     volumes:
-      # [T15-BE-MEDIA] Uploads outlive the container and are shared with web,
+      # Uploads outlive the container and are shared with web,
       # which serves them. Correct for one host; S3 the moment there are two.
       - media:/app/media
     depends_on:
@@ -137,7 +137,7 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
-    # [T15-BE-HEALTH] Readiness here, overriding the image's liveness check.
+    # Readiness here, overriding the image's liveness check.
     # The image asks "is the process alive" because that is what an
     # orchestrator restarts on. Compose asks "may web be pointed at it yet",
     # which is a question about the database and storage -- /readyz/. The
@@ -153,7 +153,7 @@ services:
     stop_grace_period: 35s
     restart: unless-stopped
 
-  # [T15-BE-NGINX][REQ-2] The only published port. Serves the bundle, proxies
+  # The only published port. Serves the bundle, proxies
   # the API by service name, and serves media from the shared volume.
   web:
     image: rmit-store-web:${GIT_COMMIT:-dev}

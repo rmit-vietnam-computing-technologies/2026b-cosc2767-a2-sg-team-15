@@ -12,7 +12,7 @@
 #   https://docs.ansible.com/ansible/latest/playbook_guide/index.html
 
 ---
-# [T15-BE-ANSIBLE][REQ-7] Split-tier deployment.
+# Split-tier deployment.
 #
 # Plan B put the SPA, the API and the database on one instance behind one
 # nginx. This splits them onto two, and automates every step the Plan B

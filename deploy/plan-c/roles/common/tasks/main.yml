@@ -11,7 +11,7 @@
 #   https://docs.ansible.com/ansible/latest/collections/ansible/builtin/dnf_module.html
 
 ---
-# [T15-BE-ANSIBLE][REQ-7] What every instance needs regardless of its tier.
+# What every instance needs regardless of its tier.
 
 - name: Install base packages
   ansible.builtin.dnf:
@@ -73,7 +73,7 @@
   changed_when: true
   when: "'/swapfile' not in common_swap_active.stdout"
 
-# [T15-BE-NGINX] Amazon Linux ships a port-80 server block inside
+# Amazon Linux ships a port-80 server block inside
 # nginx.conf, and nginx keeps the first default_server it parses. Since
 # nginx.conf is read before conf.d/, the stock block wins and every request
 # is answered by its 404 page -- including /healthz/, which makes it look

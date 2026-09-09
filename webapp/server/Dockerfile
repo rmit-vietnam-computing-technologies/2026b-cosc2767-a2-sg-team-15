@@ -72,7 +72,7 @@ RUN pip install -r requirements.txt
 # ---------------------------------------------------------------------------
 FROM python:${PYTHON_VERSION}-slim AS runtime
 
-# [ADV-3] The build that is running, baked in at build time so
+# The build that is running, baked in at build time so
 # GET /api/version/ cannot disagree with the image tag. Both remain ordinary
 # environment variables and can still be overridden at run time.
 ARG APP_VERSION=1.0.0
@@ -182,7 +182,7 @@ CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--forward
 # ---------------------------------------------------------------------------
 # test: the suite, layered on the exact runtime bytes
 # ---------------------------------------------------------------------------
-# [T15-BE-TEST][REQ-3][REQ-5] Built from runtime rather than from builder so
+# Built from runtime rather than from builder so
 # the code under test is byte-for-byte the code that deploys. It is never
 # pushed to a registry; it exists for `docker build --target test` and the
 # CI compose overlay. It needs a PostgreSQL to run against -- pytest-django

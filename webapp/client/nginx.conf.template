@@ -75,7 +75,7 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
-    # [T15-FE-CONFIG] Never cache runtime configuration. Caching it means a
+    # Never cache runtime configuration. Caching it means a
     # file mounted over config.js does nothing until every browser
     # hard-reloads, which defeats the design.
     location = /config.js {
@@ -89,7 +89,7 @@ server {
     }
 
     # --- Uploaded product images --------------------------------------------
-    # [T15-BE-MEDIA] A volume shared with the API container. Correct for
+    # A volume shared with the API container. Correct for
     # exactly one API replica; with USE_S3 on, image_url no longer points
     # here and this location is idle. The directory is a mount point, so an
     # image with nothing mounted answers 404 rather than failing to start.
@@ -103,7 +103,7 @@ server {
     location ~ ^/(api|admin|healthz|readyz|static)(/|$) {
         proxy_pass $rmit_api;
 
-        # [T15-BE-HOSTHDR] $host is what the browser typed. Django builds
+        # $host is what the browser typed. Django builds
         # image_url from it, so it must reach gunicorn unchanged, and it must
         # appear in the API's ALLOWED_HOSTS -- `localhost` under Compose, the
         # public address on an instance. Send $proxy_host instead and every

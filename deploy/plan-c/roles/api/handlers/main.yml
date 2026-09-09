@@ -15,7 +15,7 @@
     name: nginx
     state: reloaded
 
-# [T15-BE-SECRETS] systemd reads EnvironmentFile at start, not on change, so
+# systemd reads EnvironmentFile at start, not on change, so
 # an edited api.env does nothing until the unit restarts. This is a restart
 # rather than a reload: gunicorn cannot re-read its environment in place.
 - name: Restart rmit-api

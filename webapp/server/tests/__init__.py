@@ -10,6 +10,6 @@
 #   author reviewed and verified the package layout. Reference:
 #   pytest test discovery, https://docs.pytest.org/en/stable/explanation/goodpractices.html
 
-# [T15-BE-TEST] Present so pytest imports test modules as a package.
+# Present so pytest imports test modules as a package.
 # Without it, tests/unit/test_payments.py and tests/integration/test_payments.py
 # collide on the module name "test_payments" and pytest aborts collection.

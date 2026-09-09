@@ -13,7 +13,7 @@
 #   Django REST Framework viewsets, https://www.django-rest-framework.org/api-guide/viewsets/
 
 """
-[T15-BE-TEST][REQ-5] Integration tests: the order lifecycle after checkout.
+Integration tests: the order lifecycle after checkout.
 
 Cancelling is where stock moves back onto the shelf and money moves back to
 the customer, so it is the second place — after checkout itself — where a
@@ -60,7 +60,7 @@ def placed_order(member, make_product, checkout):
 
 
 def test_cancelling_an_order_restores_stock(as_user, member, placed_order):
-    """[REQ-5] Every line goes back on the shelf, once."""
+    """Every line goes back on the shelf, once."""
     order, first, second = placed_order
 
     response = as_user(member).post(f"/api/orders/{order.pk}/cancel/")
@@ -103,7 +103,7 @@ def test_cancelling_zeroes_the_order_total(as_user, member, placed_order):
 
 
 def test_cancelling_twice_does_not_restock_twice(as_user, member, placed_order):
-    """[REQ-5] Idempotence, and the most expensive bug in this file if absent.
+    """Idempotence, and the most expensive bug in this file if absent.
 
     A double-click on the cancel button must not hand back six units for a
     two-unit line. ``cancel_order`` excludes lines that are already cancelled,
@@ -178,7 +178,7 @@ def test_partial_cancellation_recalculates_the_total_and_keeps_the_order_live(
 
 
 def test_a_cancelled_line_cannot_be_revived(as_user, member, admin, placed_order):
-    """[REQ-5] The one-way door.
+    """The one-way door.
 
     Allowing this would leave an order holding stock it already returned and
     money it already refunded. Re-ordering is the supported path, because a
@@ -305,7 +305,7 @@ def test_a_line_cannot_be_reached_through_someone_elses_order(
 
 
 def test_the_item_route_requires_its_trailing_slash(as_user, admin, placed_order):
-    """[T15-BE-NGINX] A missing slash is a 301, and a 301 loses the body.
+    """A missing slash is a 301, and a 301 loses the body.
 
     ``DefaultRouter`` generates this route with a trailing slash, so a PATCH
     to the slashless path is answered by Django's APPEND_SLASH redirect

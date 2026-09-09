@@ -31,14 +31,14 @@ from .base import DATABASES, LOGGING, REST_FRAMEWORK, STORAGES
 # reads this file and assumes otherwise.
 DEBUG = False
 
-# [T15-BE-HOSTHDR][REQ-5] DRF's APIClient sends Host: testserver. Omit it and
+# DRF's APIClient sends Host: testserver. Omit it and
 # every request fails with DisallowedHost before reaching a view — which is
 # also exactly how ALLOWED_HOSTS misconfiguration fails behind a load
 # balancer. The configuration-failure tests assert that behaviour deliberately
 # by overriding this list per-test.
 ALLOWED_HOSTS = ["testserver", "localhost", "127.0.0.1"]
 
-# [T15-BE-TEST] Weak hashing, on purpose and only here.
+# Weak hashing, on purpose and only here.
 #
 # The default PBKDF2 hasher runs hundreds of thousands of iterations per call.
 # With a fixture creating four users per test, password hashing dominates the
@@ -50,7 +50,7 @@ PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 # tests can assert that a password reset or merchant invitation was sent.
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 
-# [T15-BE-TEST][REQ-5] Throttling off.
+# Throttling off.
 #
 # base.py throttles auth at 20/min. The authorisation matrix fires far more
 # than 20 requests, so with throttling on the suite fails
@@ -61,7 +61,7 @@ REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {
     scope: None for scope in REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]
 }
 
-# [T15-BE-STATIC] Manifest storage requires collectstatic to have run, or any
+# Manifest storage requires collectstatic to have run, or any
 # view rendering a static asset raises "Missing staticfiles manifest entry".
 # That would make the admin and browsable-API tests fail for a reason that has
 # nothing to do with what they assert.
@@ -69,7 +69,7 @@ STORAGES["staticfiles"] = {
     "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
 }
 
-# [T15-BE-MEDIA] Uploads go to a throwaway directory, never server/media/.
+# Uploads go to a throwaway directory, never server/media/.
 # conftest.py narrows this to a per-test tmp_path; this is the backstop for
 # anything that runs outside a fixture.
 MEDIA_ROOT = Path(tempfile.mkdtemp(prefix="rmit-test-media-"))
@@ -77,7 +77,7 @@ MEDIA_ROOT = Path(tempfile.mkdtemp(prefix="rmit-test-media-"))
 # Never reach S3 from a test, whatever happens to be in the environment.
 USE_S3 = False
 
-# [T15-BE-DB] Persistent connections confuse pytest-django's transaction
+# Persistent connections confuse pytest-django's transaction
 # rollback between tests and can leave a connection pinned to a dropped test
 # database at teardown.
 DATABASES["default"]["CONN_MAX_AGE"] = 0

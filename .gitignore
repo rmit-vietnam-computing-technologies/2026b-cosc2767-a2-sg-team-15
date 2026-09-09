@@ -74,7 +74,7 @@ webapp/client/node_modules/
 *.tsbuildinfo
 
 # ---------------------------------------------------------------------------
-# [T15-BE-TEST] Test and coverage output
+# Test and coverage output
 #
 # Generated per build and published by Jenkins from the workspace. A committed
 # report is a stale number outliving the code it measured.

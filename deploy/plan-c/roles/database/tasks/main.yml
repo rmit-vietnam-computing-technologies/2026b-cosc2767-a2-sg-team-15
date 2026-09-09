@@ -11,7 +11,7 @@
 #   https://docs.ansible.com/ansible/latest/collections/community/postgresql/
 
 ---
-# [T15-BE-DB][REQ-2] PostgreSQL, co-located with the API tier.
+# PostgreSQL, co-located with the API tier.
 #
 # Skipped entirely when db_host is not "localhost" -- see site.yml. That
 # switch is what lets the same playbook target RDS without editing a role,
@@ -39,7 +39,7 @@
   changed_when: true
   when: not database_pgdata.stat.exists
 
-# [T15-BE-DB] A fresh initdb writes `ident` auth for TCP on the Red Hat
+# A fresh initdb writes `ident` auth for TCP on the Red Hat
 # family. Django connects over TCP with a username and password, so it is
 # refused with "FATAL: Ident authentication failed" -- an error that says
 # nothing about the auth method being wrong.

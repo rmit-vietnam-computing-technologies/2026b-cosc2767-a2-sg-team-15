@@ -14,7 +14,7 @@ Acknowledgement: The Django half of deploy/plan-b/nginx-rmit-store.conf, moved
 # MANAGED BY ANSIBLE -- edits here are overwritten on the next run.
 # Source: deploy/plan-c/roles/api/templates/api-nginx.conf.j2
 
-# [T15-BE-NGINX][REQ-7] The API instance's own web server.
+# The API instance's own web server.
 #
 # Two jobs, and the second is why this exists at all:
 #
@@ -40,7 +40,7 @@ server {
     location / {
         proxy_pass http://127.0.0.1:8000;
 
-        # [T15-BE-HOSTHDR] Forward the header the web tier sent, not this
+        # Forward the header the web tier sent, not this
         # instance's own address.
         #
         # $host here is whatever arrived from the web tier, which is the

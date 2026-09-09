@@ -10,7 +10,7 @@
 ;   https://docs.ansible.com/ansible/latest/inventory_guide/intro_inventory.html
 ;   SSH ProxyJump, https://man.openbsd.org/ssh_config#ProxyJump
 
-; [T15-BE-ANSIBLE][REQ-7] Inventory — TEMPLATE, placeholders only.
+; Inventory — TEMPLATE, placeholders only.
 ;
 ;   cp inventory.ini.example inventory.ini
 ;   $EDITOR inventory.ini

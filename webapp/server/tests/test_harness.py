@@ -56,13 +56,13 @@ def test_test_settings_are_active():
 
 @pytest.mark.integration
 def test_database_is_postgresql(db):
-    """[T15-BE-DB][REQ-5] The suite runs on the same engine as production."""
+    """The suite runs on the same engine as production."""
     assert connection.vendor == "postgresql"
 
 
 @pytest.mark.integration
 def test_row_locking_is_available(db):
-    """[T15-BE-DB][REQ-5] Why SQLite is not an option.
+    """Why SQLite is not an option.
 
     ``apps.orders.services.create_order`` calls
     ``select_for_update(of=("self",))`` to hold a row lock while it checks stock
@@ -101,7 +101,7 @@ def test_fixtures_build_all_four_roles(member, merchant, admin):
 
 @pytest.mark.integration
 def test_deactivated_merchant_is_not_active(deactivated_merchant):
-    """[REQ-5] The case a role-only permission check waves through."""
+    """The case a role-only permission check waves through."""
     assert deactivated_merchant.role == Role.MERCHANT
     assert deactivated_merchant.merchant is not None
     assert not deactivated_merchant.is_active_merchant
@@ -116,6 +116,6 @@ def test_anonymous_client_is_rejected_by_default(api):
 
 @pytest.mark.integration
 def test_media_is_isolated_per_test(settings, tmp_path):
-    """[T15-BE-MEDIA] Nothing lands in server/media/ during a test run."""
+    """Nothing lands in server/media/ during a test run."""
     assert settings.MEDIA_ROOT == tmp_path / "media"
     assert settings.MEDIA_ROOT.exists()

@@ -9,7 +9,7 @@
 # Acknowledgement: Git line-ending guidance, https://git-scm.com/docs/gitattributes
 
 # ---------------------------------------------------------------------------
-# [T15-BE-TEST] Line endings
+# Line endings
 #
 # The team works across Windows and Linux. Git for Windows defaults to
 # core.autocrlf=true, so a shell script authored on Windows can reach a

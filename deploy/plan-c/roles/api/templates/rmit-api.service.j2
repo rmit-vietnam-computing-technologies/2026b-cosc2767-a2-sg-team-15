@@ -26,7 +26,7 @@ User={{ app_user }}
 Group={{ app_user }}
 WorkingDirectory={{ app_root }}/webapp/server
 
-# [T15-BE-SECRETS] Root-owned, mode 600, outside the checkout. systemd reads
+# Root-owned, mode 600, outside the checkout. systemd reads
 # this as root before dropping to {{ app_user }}, so the application never
 # needs permission to read its own secrets.
 EnvironmentFile=/etc/rmit-store/api.env

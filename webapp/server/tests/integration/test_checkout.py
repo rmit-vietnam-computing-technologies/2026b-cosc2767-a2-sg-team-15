@@ -14,7 +14,7 @@
 #   DRF status codes, https://www.django-rest-framework.org/api-guide/status-codes/
 
 """
-[T15-BE-TEST][REQ-5] Integration tests: checkout.
+Integration tests: checkout.
 
 The money path. Everything here goes through ``POST /api/orders/`` rather
 than calling the service directly, because the properties worth asserting are
@@ -48,7 +48,7 @@ pytestmark = pytest.mark.integration
 def test_checkout_creates_an_order_and_decrements_stock_once(
     member, product, checkout
 ):
-    """[REQ-5] Stock moves by exactly the quantity bought. Not twice, not none."""
+    """Stock moves by exactly the quantity bought. Not twice, not none."""
     response = checkout(member, [(product, 3)])
 
     assert response.status_code == 201
@@ -66,7 +66,7 @@ def test_checkout_creates_an_order_and_decrements_stock_once(
 def test_totals_are_computed_from_the_database_not_the_request(
     member, make_product, checkout
 ):
-    """[REQ-5] A shopper cannot set their own price.
+    """A shopper cannot set their own price.
 
     The extra keys below are what an attacker would add to the request body.
     ``OrderCreateSerializer`` declares only ``items`` and ``payment``, so they
@@ -156,7 +156,7 @@ def test_line_items_snapshot_the_product(member, brand, make_product, checkout):
 
 
 def test_order_confirmation_email_is_sent(member, product, checkout):
-    """[REQ-8] The customer-facing notification, captured by the locmem backend."""
+    """The customer-facing notification, captured by the locmem backend."""
     response = checkout(member, [(product, 1)])
 
     assert response.status_code == 201
@@ -173,7 +173,7 @@ def test_order_confirmation_email_is_sent(member, product, checkout):
 def test_declined_card_leaves_no_order_and_takes_no_stock(
     member, product, checkout, declined_card
 ):
-    """[REQ-5] The single most valuable assertion in the suite.
+    """The single most valuable assertion in the suite.
 
     Three things have to hold together: the response is a 402, no Order row
     exists, and the stock is untouched. Asserting only the status code would
@@ -313,7 +313,7 @@ def test_card_validation_rejects_before_reaching_the_gateway(
 
 
 def test_card_number_is_never_echoed_back(member, product, checkout, approved_card):
-    """[REQ-5] Only the brand and last four digits survive the request.
+    """Only the brand and last four digits survive the request.
 
     Every field on PaymentSerializer is write_only. Asserting on the rendered
     body rather than the model is deliberate: a field added to the serializer

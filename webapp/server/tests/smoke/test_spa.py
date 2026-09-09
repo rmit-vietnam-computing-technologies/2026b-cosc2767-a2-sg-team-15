@@ -13,7 +13,7 @@
 #   requests documentation, https://requests.readthedocs.io/en/latest/
 
 """
-[T15-BE-TEST][REQ-5][REQ-2] Deployment smoke tests: the frontend tier.
+Deployment smoke tests: the frontend tier.
 
 Separate from the API checks and gated on its own ``SMOKE_SPA_BASE_URL``,
 because the two tiers are only the same origin behind a single nginx. Once
@@ -45,7 +45,7 @@ def test_the_spa_is_served_at_the_root(http, spa_base_url):
 
 
 def test_a_client_route_falls_back_to_the_spa(http, spa_base_url):
-    """[T15-BE-NGINX][REQ-5] The single most common frontend deployment fault.
+    """The single most common frontend deployment fault.
 
     ``/shop`` is a Vue Router path, not a file on disk. Navigating to it from
     inside the application works because the router handles it in the
@@ -71,7 +71,7 @@ def test_a_deep_client_route_also_falls_back(http, spa_base_url):
 
 
 def test_the_runtime_config_is_served_unhashed(http, spa_base_url):
-    """[T15-FE-CONFIG][REQ-2] The file that makes one artifact promotable.
+    """The file that makes one artifact promotable.
 
     ``config.js`` is copied from ``public/`` into ``dist/`` unchanged and
     unhashed, so it sits next to index.html and can be replaced per
@@ -88,7 +88,7 @@ def test_the_runtime_config_is_served_unhashed(http, spa_base_url):
 
 
 def test_the_runtime_config_does_not_point_at_localhost(http, spa_base_url):
-    """[T15-FE-CONFIG][REQ-5] The misconfiguration that only a browser sees.
+    """The misconfiguration that only a browser sees.
 
     ``API_BASE_URL`` is read by the *browser*, not by the server. Left
     pointing at localhost it works perfectly for anyone testing on the

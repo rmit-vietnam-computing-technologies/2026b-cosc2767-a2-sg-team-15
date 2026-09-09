@@ -11,7 +11,7 @@
 #   requests documentation, https://requests.readthedocs.io/en/latest/
 
 """
-[T15-BE-TEST][REQ-5][REQ-4] Fixtures for the deployment smoke suite.
+Fixtures for the deployment smoke suite.
 
     SMOKE_BASE_URL=http://localhost:8000        pytest -m smoke --no-cov
     SMOKE_BASE_URL=http://staging.example.com   pytest -m smoke --no-cov
