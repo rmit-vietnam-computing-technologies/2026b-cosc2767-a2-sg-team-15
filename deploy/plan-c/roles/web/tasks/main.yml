@@ -5,7 +5,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 03/09/2026
-# Last modified: 03/09/2026
+# Last modified: 08/09/2026
 # Acknowledgement: Automates section 5.1 of docs/runbooks/plan-b-ec2.md.
 #   Reference: ansible.builtin.npm,
 #   https://docs.ansible.com/ansible/latest/collections/community/general/npm_module.html
@@ -50,7 +50,7 @@
 
 - name: Check whether frontend dependencies are installed
   ansible.builtin.stat:
-    path: "{{ app_root }}/client/node_modules/.package-lock.json"
+    path: "{{ app_root }}/webapp/client/node_modules/.package-lock.json"
   register: web_node_modules
 
 # `npm ci` deletes and reinstalls node_modules by design, so it can never
@@ -59,7 +59,7 @@
 # several hundred packages on every run.
 - name: Install frontend dependencies
   community.general.npm:
-    path: "{{ app_root }}/client"
+    path: "{{ app_root }}/webapp/client"
     ci: true
   become: true
   become_user: "{{ app_user }}"
@@ -67,7 +67,7 @@
 
 - name: Check whether the bundle has been built
   ansible.builtin.stat:
-    path: "{{ app_root }}/client/dist/index.html"
+    path: "{{ app_root }}/webapp/client/dist/index.html"
   register: web_dist
 
 # Conditioned on the checkout rather than `creates:`. With `creates:` the
@@ -76,7 +76,7 @@
 - name: Build the SPA bundle
   ansible.builtin.command:
     cmd: npm run build
-    chdir: "{{ app_root }}/client"
+    chdir: "{{ app_root }}/webapp/client"
   become: true
   become_user: "{{ app_user }}"
   when: web_checkout.changed or not web_dist.stat.exists
@@ -86,7 +86,7 @@
 - name: Template the runtime configuration
   ansible.builtin.template:
     src: config.js.j2
-    dest: "{{ app_root }}/client/dist/config.js"
+    dest: "{{ app_root }}/webapp/client/dist/config.js"
     owner: "{{ app_user }}"
     group: "{{ app_user }}"
     mode: "0644"
@@ -109,7 +109,7 @@
 
 - name: Publish the bundle to the web root
   ansible.builtin.copy:
-    src: "{{ app_root }}/client/dist/"
+    src: "{{ app_root }}/webapp/client/dist/"
     dest: "{{ web_root }}/"
     remote_src: true
     owner: root

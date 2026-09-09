@@ -5,7 +5,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 03/09/2026
-# Last modified: 07/09/2026
+# Last modified: 08/09/2026
 # Acknowledgement: Values derived from deploy/plan-b/api.env.example and the
 #   manual steps in docs/runbooks/plan-b-ec2.md. Reference: Ansible variable
 #   precedence, https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html
@@ -57,10 +57,10 @@ repo_version: dev/backend
 app_user: ec2-user
 app_root: /home/ec2-user/2026b-cosc2767-a2-sg-team-15
 
-# The virtualenv must sit at server/.venv. rmit-api.service references that
+# The virtualenv must sit at webapp/server/.venv. rmit-api.service references that
 # path, and a venv one level up produces status=203/EXEC from systemd — an
 # error that says nothing about paths.
-venv_bin: /home/ec2-user/2026b-cosc2767-a2-sg-team-15/server/.venv/bin
+venv_bin: /home/ec2-user/2026b-cosc2767-a2-sg-team-15/webapp/server/.venv/bin
 
 # --- Django ----------------------------------------------------------------
 

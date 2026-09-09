@@ -5,8 +5,8 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 07/09/2026
-# Last modified: 07/09/2026
-# Acknowledgement: The switch is upstream's own USE_S3 (server/config/settings/base.py);
+# Last modified: 08/09/2026
+# Acknowledgement: The switch is upstream's own USE_S3 (webapp/server/config/settings/base.py);
 #   this file only supplies what a laptop lacks that an instance has.
 #   Drafted with Claude (Anthropic) in a guided session; the author ran and
 #   verified it. Reference: boto3 credential resolution order,

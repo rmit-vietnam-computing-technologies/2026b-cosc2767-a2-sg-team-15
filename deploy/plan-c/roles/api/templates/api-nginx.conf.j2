@@ -6,7 +6,7 @@ Assessment: Assignment 2
 Author: Vo Hoang Khanh
 ID: s3926310
 Created  date: 03/09/2026
-Last modified: 03/09/2026
+Last modified: 08/09/2026
 Acknowledgement: The Django half of deploy/plan-b/nginx-rmit-store.conf, moved
   onto the API instance now that the tiers are split. Reference: nginx proxy
   module, https://nginx.org/en/docs/http/ngx_http_proxy_module.html
@@ -67,14 +67,14 @@ server {
     # API replica cannot serve images uploaded to the first, and the failure
     # is intermittent rather than total -- which is far worse to diagnose.
     location /media/ {
-        alias {{ app_root }}/server/media/;
+        alias {{ app_root }}/webapp/server/media/;
         access_log off;
         expires 7d;
     }
 
     # Django admin CSS, DRF's browsable API assets, Swagger UI.
     location /static/ {
-        alias {{ app_root }}/server/staticfiles/;
+        alias {{ app_root }}/webapp/server/staticfiles/;
         access_log off;
         expires 7d;
     }

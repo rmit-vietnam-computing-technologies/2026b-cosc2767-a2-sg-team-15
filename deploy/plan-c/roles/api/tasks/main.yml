@@ -5,7 +5,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 03/09/2026
-# Last modified: 03/09/2026
+# Last modified: 08/09/2026
 # Acknowledgement: Automates sections 2 to 5.2 of docs/runbooks/plan-b-ec2.md.
 #   Reference: amazon.aws.ec2_metadata_facts,
 #   https://docs.ansible.com/ansible/latest/collections/amazon/aws/ec2_metadata_facts_module.html
@@ -57,14 +57,14 @@
   ansible.builtin.set_fact:
     api_deployed_commit: "{{ api_checkout.after[:7] }}"
 
-# The virtualenv must be at server/.venv. rmit-api.service references that
+# The virtualenv must be at webapp/server/.venv. rmit-api.service references that
 # path, and a venv one level up produces status=203/EXEC from systemd -- an
 # error that says nothing about paths. It also matches the laptop layout in
 # docs/TESTING.md, so one set of instructions works in both places.
 - name: Create the virtualenv and install dependencies
   ansible.builtin.pip:
-    requirements: "{{ app_root }}/server/requirements.txt"
-    virtualenv: "{{ app_root }}/server/.venv"
+    requirements: "{{ app_root }}/webapp/server/requirements.txt"
+    virtualenv: "{{ app_root }}/webapp/server/.venv"
     virtualenv_command: python3.11 -m venv
   become: true
   become_user: "{{ app_user }}"
@@ -114,7 +114,7 @@
 - name: Apply database migrations
   ansible.builtin.command:
     cmd: "{{ venv_bin }}/python manage.py migrate --noinput"
-    chdir: "{{ app_root }}/server"
+    chdir: "{{ app_root }}/webapp/server"
   environment: "{{ django_environment }}"
   become: true
   become_user: "{{ app_user }}"
@@ -135,7 +135,7 @@
       {{ venv_bin }}/python manage.py seed_demo --demo-users
       --admin-email {{ seed_admin_email }}
       --admin-password {{ seed_admin_password }}
-    chdir: "{{ app_root }}/server"
+    chdir: "{{ app_root }}/webapp/server"
     creates: /var/lib/rmit-store/.demo-seeded
   environment: "{{ django_environment }}"
   become: true
@@ -163,7 +163,7 @@
 - name: Collect static files
   ansible.builtin.command:
     cmd: "{{ venv_bin }}/python manage.py collectstatic --noinput"
-    chdir: "{{ app_root }}/server"
+    chdir: "{{ app_root }}/webapp/server"
   environment: "{{ django_environment }}"
   become: true
   become_user: "{{ app_user }}"
@@ -172,7 +172,7 @@
 
 - name: Ensure the media directory exists
   ansible.builtin.file:
-    path: "{{ app_root }}/server/media"
+    path: "{{ app_root }}/webapp/server/media"
     state: directory
     owner: "{{ app_user }}"
     group: "{{ app_user }}"

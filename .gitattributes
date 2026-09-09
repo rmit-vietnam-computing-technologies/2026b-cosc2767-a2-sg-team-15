@@ -5,7 +5,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 02/09/2026
-# Last modified: 02/09/2026
+# Last modified: 08/09/2026
 # Acknowledgement: Git line-ending guidance, https://git-scm.com/docs/gitattributes
 
 # ---------------------------------------------------------------------------
@@ -25,7 +25,7 @@
 # produce it.
 #
 # Deliberately NOT `* text=auto eol=lf`. Two upstream files
-# (client/src/styles/main.scss and _variables.scss) are stored with CRLF, and a
+# (webapp/client/src/styles/main.scss and _variables.scss) are stored with CRLF, and a
 # blanket rule would rewrite them — putting two vendored files into the
 # modifications table in docs/UPSTREAM.md for no reason. Scoping to the
 # extensions we author leaves the import byte-identical.

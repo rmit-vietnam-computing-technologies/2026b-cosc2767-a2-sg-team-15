@@ -5,7 +5,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 07/09/2026
-# Last modified: 07/09/2026
+# Last modified: 08/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic) in a guided session; the
 #   author ran and verified it. Reference: merging Compose files,
 #   https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/
@@ -16,12 +16,12 @@
 # never part of a running store, and keeping it here means `docker compose
 # up` cannot start it by accident.
 #
-#     mkdir -p server/test-reports
+#     mkdir -p webapp/server/test-reports
 #     docker compose -f compose.yaml -f compose.ci.yaml run --rm test
 #
 # That runs pytest --cov-fail-under=65 (the image's CMD) against the same
 # postgres:16 the store uses, and leaves junit.xml and coverage.xml in
-# server/test-reports/ for the Jenkins publishers. A marker subset is one
+# webapp/server/test-reports/ for the Jenkins publishers. A marker subset is one
 # more argument:
 #
 #     docker compose -f compose.yaml -f compose.ci.yaml run --rm test pytest -m unit
@@ -40,7 +40,7 @@ services:
   test:
     image: rmit-store-api-test:${GIT_COMMIT:-dev}
     build:
-      context: ./server
+      context: ./webapp/server
       target: test
       args:
         GIT_COMMIT: ${GIT_COMMIT:-dev}
@@ -51,7 +51,7 @@ services:
       # a question.
       DATABASE_URL: postgres://${POSTGRES_USER:-rmit}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is not set -- see .env.example}@db:5432/${POSTGRES_DB:-rmit_store}
     volumes:
-      - ./server/test-reports:/app/test-reports
+      - ./webapp/server/test-reports:/app/test-reports
     depends_on:
       db:
         condition: service_healthy

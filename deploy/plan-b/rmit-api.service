@@ -5,7 +5,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 03/09/2026
-# Last modified: 03/09/2026
+# Last modified: 08/09/2026
 # Acknowledgement: Adapted from step 9.3 of UPSTREAM-README.md. Changed from
 #   the original: paths point at this repository's layout rather than a bare
 #   upstream clone, secrets are loaded from an EnvironmentFile owned by root
@@ -38,7 +38,7 @@ Wants=postgresql.service
 # with nothing obviously wrong to find.
 User=ec2-user
 Group=ec2-user
-WorkingDirectory=/home/ec2-user/2026b-cosc2767-a2-sg-team-15/server
+WorkingDirectory=/home/ec2-user/2026b-cosc2767-a2-sg-team-15/webapp/server
 
 # [T15-BE-SECRETS] Secrets live in a root-owned file, mode 600, outside the
 # checkout.
@@ -63,7 +63,7 @@ Environment=DJANGO_SETTINGS_MODULE=config.settings.prod
 
 # --bind 127.0.0.1, not 0.0.0.0. nginx is the only thing that should reach
 # gunicorn; the security group is a second line of defence, not the first.
-ExecStart=/home/ec2-user/2026b-cosc2767-a2-sg-team-15/server/.venv/bin/gunicorn \
+ExecStart=/home/ec2-user/2026b-cosc2767-a2-sg-team-15/webapp/server/.venv/bin/gunicorn \
     config.wsgi:application \
     --bind 127.0.0.1:8000 \
     --workers 3 \

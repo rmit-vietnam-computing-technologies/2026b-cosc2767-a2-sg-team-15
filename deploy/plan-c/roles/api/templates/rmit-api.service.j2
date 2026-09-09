@@ -6,7 +6,7 @@ Assessment: Assignment 2
 Author: Vo Hoang Khanh
 ID: s3926310
 Created  date: 03/09/2026
-Last modified: 03/09/2026
+Last modified: 08/09/2026
 Acknowledgement: Templated from deploy/plan-b/rmit-api.service. Reference:
   systemd.exec, https://www.freedesktop.org/software/systemd/man/systemd.exec.html
 -#}
@@ -24,7 +24,7 @@ Wants=postgresql.service
 [Service]
 User={{ app_user }}
 Group={{ app_user }}
-WorkingDirectory={{ app_root }}/server
+WorkingDirectory={{ app_root }}/webapp/server
 
 # [T15-BE-SECRETS] Root-owned, mode 600, outside the checkout. systemd reads
 # this as root before dropping to {{ app_user }}, so the application never
