@@ -1,16 +1,16 @@
-output "pub_sg_id" {
-  description = "The ID of the Public Security Group"
-  value = aws_security_group.public_sg.id
+output "jenkins_sg_id" {
+  description = "The ID of the jenkins Security Group"
+  value = aws_security_group.jenkins_sg.id
 }
 
 output "buildnode_sg_id" {
   description = "The ID of the buildnode security group"
-  value = aws.security_group.jenkins_buildnode_sg.id
+  value = aws_security_group.jenkins_buildnode_sg.id
 }
 
 output "build_node_instance_id" {
   description = "The ID of the EC2 build node instance"
-  value = aws_instance.public_main.id
+  value = aws_instance.lim_public_jenkins_buildnode.id
 }
 
 output "jenkins_instance_id" {
@@ -20,7 +20,7 @@ output "jenkins_instance_id" {
 
 output "build_node_public_ip" {
   description = "The public IP of the build node instance"
-  value = aws_instance.public_main.public_ip
+  value = aws_instance.lim_public_jenkins_buildnode.public_ip
 }
 
 output "jenkins_instance_public_ip" {

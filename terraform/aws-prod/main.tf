@@ -30,3 +30,12 @@ module "ec2" {
   vpc_private_subnet_id = module.vpc.private_subnet_ids[0]
   vpc_public_subnet_id = module.vpc.public_subnet_id[0]
 }
+
+module "cfdns" {
+  source = "./modules/cfdns"
+  jenkins_instance_public_ip = module.ec2.jenkins_instance_public_ip
+  zone_id = var.zone_id
+  account_id = var.account_id
+  domain = var.domain
+
+}
