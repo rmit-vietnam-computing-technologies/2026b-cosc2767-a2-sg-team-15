@@ -21,7 +21,7 @@ pipeline {
                 if ! docker ps &> /dev/null; then
                     echo "Docker has not started"
                     sudo service docker start
-                    sleep 5
+                    sleep 10
                     docker ps &> /dev/null || (echo "Docker failed to start" && exit 1)
                 else
                     echo "Docker is already running."
