@@ -59,7 +59,7 @@ pipeline {
             echo "Pushed image to ECR correctly"
             }
         }
-
+    }
     post {
         success {
             echo 'Pipeline suceeded'
