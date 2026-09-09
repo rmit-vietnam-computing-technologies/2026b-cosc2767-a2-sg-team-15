@@ -111,3 +111,6 @@ jenkins_home/*
 jenkins_home/jobs/**
 !jenkins_home/jobs/**/
 !jenkins_home/jobs/**/config.xml
+
+# tfplan
+**/*.tfplan
