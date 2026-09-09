@@ -5,19 +5,26 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 07/09/2026
-# Last modified: 07/09/2026
+# Last modified: 08/09/2026
 # Acknowledgement: The web tier's site from
 #   deploy/plan-c/roles/web/templates/web-nginx.conf.j2, re-targeted at a
 #   container. Drafted with Claude (Anthropic) in a guided session; the
 #   author ran and verified it. References: nginx proxy module,
 #   https://nginx.org/en/docs/http/ngx_http_proxy_module.html; nginx
 #   resolver directive,
-#   https://nginx.org/en/docs/http/ngx_http_core_module.html#resolver
+#   https://nginx.org/en/docs/http/ngx_http_core_module.html#resolver;
+#   the nginx image's template rendering, https://hub.docker.com/_/nginx
+#   ("Using environment variables in nginx configuration").
 
-# RENDERED AT CONTAINER START. The nginx image's entrypoint substitutes
-# ${API_UPSTREAM} and writes the result to /etc/nginx/conf.d/default.conf,
-# replacing the vendor's default site. Every other $variable below is
-# nginx's own and survives the substitution untouched.
+# RENDERED AT CONTAINER START. Mounted into the web image at
+# /etc/nginx/templates/default.conf.template (see the `web` service in
+# compose.yaml); the image's entrypoint substitutes ${API_UPSTREAM} and
+# writes the result to /etc/nginx/conf.d/default.conf before nginx starts,
+# replacing whatever site the image was built with. Every other $variable
+# below is nginx's own and survives the substitution untouched.
+#
+# Kept outside webapp/client on purpose: the web image (webapp/client/
+# Dockerfile) is the frontend workstream's; this file is the deployment's.
 
 #  The public entry point, containerised.
 #
