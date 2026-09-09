@@ -94,3 +94,8 @@ resource "aws_instance" "lim_public_jenkins_buildnode" {
     Name = "jenkins build node instance"
   }
 }
+
+resource "aws_eip" "jenkins_eip" {
+  instance = aws_instance.public_jenkins.id
+  domain = "vpc"
+}
