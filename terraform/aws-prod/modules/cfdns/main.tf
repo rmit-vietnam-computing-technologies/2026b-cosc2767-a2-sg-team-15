@@ -17,7 +17,7 @@ resource "cloudflare_dns_record" "prod_frontend" {
  ttl = auto
  proxied = false
  comment = "COSC2767 Frontend ALB prod"
-#}
+}
 
 resource "cloudflare_dns_record" "canary_frontend" {
  zone_id = var.cf_zone_id
