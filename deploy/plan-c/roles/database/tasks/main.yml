@@ -5,21 +5,14 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 03/09/2026
-# Last modified: 03/09/2026
+# Last modified: 09/09/2026
 # Acknowledgement: Automates section 1.3 of docs/runbooks/plan-b-ec2.md.
 #   Reference: community.postgresql collection,
 #   https://docs.ansible.com/ansible/latest/collections/community/postgresql/
 
 ---
-# PostgreSQL, co-located with the API tier.
-#
-# Skipped entirely when db_host is not "localhost" -- see site.yml. That
-# switch is what lets the same playbook target RDS without editing a role,
-# and the trade-off is argued in docs/adr/0002-database-topology.md.
-#
-# The database listens on localhost only. Nothing outside this instance ever
-# needs to reach it, so there is no security group rule for 5432 at all --
-# the strongest possible version of "closed by default".
+# PostgreSQL on the API instance, localhost only.
+# Skipped when db_host is not "localhost", so the same playbook targets RDS.
 
 - name: Install PostgreSQL
   ansible.builtin.dnf:
@@ -39,14 +32,8 @@
   changed_when: true
   when: not database_pgdata.stat.exists
 
-# A fresh initdb writes `ident` auth for TCP on the Red Hat
-# family. Django connects over TCP with a username and password, so it is
-# refused with "FATAL: Ident authentication failed" -- an error that says
-# nothing about the auth method being wrong.
-#
-# Only the `host` lines change. The `local ... peer` lines are what
-# `sudo -u postgres psql` uses, and breaking those locks you out of your own
-# database.
+# Red Hat's initdb writes `ident` for TCP; Django needs password
+# auth. Only the `host` lines change; `local ... peer` stays for psql.
 - name: Require password authentication for TCP connections
   ansible.builtin.replace:
     path: /var/lib/pgsql/data/pg_hba.conf
@@ -78,8 +65,7 @@
   become: true
   become_user: postgres
 
-# The gate from the runbook, expressed as a task. If this fails, every
-# migration below it would fail for the same reason and with a worse message.
+# Fail here with a clear message rather than at the first migration.
 - name: Verify the application can connect over TCP
   community.postgresql.postgresql_ping:
     login_host: 127.0.0.1

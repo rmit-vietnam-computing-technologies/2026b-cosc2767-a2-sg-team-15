@@ -5,7 +5,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 02/09/2026
-# Last modified: 08/09/2026
+# Last modified: 09/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic) in a guided session; the
 #   author reviewed, ran and adapted every expected status code against
 #   apps/core/permissions.py and each viewset's permission_classes.
@@ -14,28 +14,14 @@
 #   pytest parametrize, https://docs.pytest.org/en/stable/how-to/parametrize.html
 
 """
-The authorisation matrix.
+The authorisation matrix: one endpoint per permission
+class, against every role, asserting the exact status code. Parametrised, so
+a regression names the endpoint and the role.
 
-One endpoint per permission class, against every role, asserting the exact
-status code. This is the suite that justifies choosing pytest over
-``manage.py test``: written as parameters it is one function and thirty-six
-individually named results in the Jenkins JUnit view, so a regression names
-the endpoint and the role that broke. The same coverage under ``unittest`` is
-thirty-six hand-written methods, or one loop that reports a single pass or
-fail and tells you nothing.
-
-Reading the table below is the fastest way to understand who may do what.
-
-Three status codes, three different meanings, and the distinction matters:
-
-    401  no credentials were presented
-    403  credentials were presented and are not enough
-    404  the row exists, but not inside the queryset this caller can see
-
-That last one is deliberate. Scoping the queryset rather than checking
-ownership per handler means another seller's product id is indistinguishable
-from one that never existed, so the endpoint cannot be used to probe for
-which ids are real.
+    401  no credentials
+    403  credentials, not enough
+    404  the row is outside the queryset this caller can see -- deliberate,
+         so another seller's id is indistinguishable from a nonexistent one
 """
 
 import pytest
@@ -64,12 +50,8 @@ ROLES = [ANONYMOUS, MEMBER, MERCHANT, ADMIN]
 # ---------------------------------------------------------------------------
 
 MATRIX = [
-    # One row per permission class rather than one per endpoint. Endpoints
-    # that share a permission class are one equivalence partition: proving
-    # the class once proves it for every viewset that declares it, and the
-    # wiring of each viewset to its class is covered by the scoping tests
-    # below and by the feature suites. Rows are kept only where the expected
-    # codes differ from every other row.
+    # One row per permission class; routes sharing a class are one
+    # equivalence partition. Per-viewset wiring is covered below.
     #
     # --- public: no credentials are ever required ---------------------------
     ("get", "/healthz/", {ANONYMOUS: 200, MEMBER: 200, MERCHANT: 200, ADMIN: 200}),
@@ -118,11 +100,7 @@ def _client_for(role, api, as_user, member, merchant, admin):
     }[role]
 
 
-# Named rows, so a failure in Jenkins reads
-# "test_authorisation_matrix[admin-GET /api/manage/brands/]" rather than
-# "[admin-expected21]". The whole argument for parametrising this suite is
-# that the report names the endpoint and the role; unnamed parameters throw
-# that away and leave an index to count through by hand.
+# Named rows: a failure reads "[admin-GET /api/manage/brands/]", not "[admin-expected21]".
 MATRIX_PARAMS = [
     pytest.param(method, path, expected, id=f"{method.upper()} {path}")
     for method, path, expected in MATRIX

@@ -5,7 +5,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 03/09/2026
-# Last modified: 08/09/2026
+# Last modified: 09/09/2026
 # Acknowledgement: Adapted from step 9.3 of UPSTREAM-README.md. Changed from
 #   the original: paths point at this repository's layout rather than a bare
 #   upstream clone, secrets are loaded from an EnvironmentFile owned by root
@@ -14,16 +14,9 @@
 #   systemd.exec, https://www.freedesktop.org/software/systemd/man/systemd.exec.html
 #   gunicorn deployment, https://docs.gunicorn.org/en/stable/deploy.html
 
-# The API as a managed service.
-#
-# Install to /etc/systemd/system/rmit-api.service, then:
-#   sudo systemctl daemon-reload
-#   sudo systemctl enable --now rmit-api
-#
-# `runserver` is single-threaded and dies with the SSH session. This is the
-# difference between "the application is running" and "the application is
-# deployed": it survives logout, restarts on crash, starts on boot, and logs
-# somewhere a person can find it later.
+# The API as a managed service: survives logout,
+# restarts on crash, starts on boot, logs to the journal.
+# Install to /etc/systemd/system/, then systemctl daemon-reload && enable --now rmit-api.
 
 [Unit]
 Description=RMIT Store API (gunicorn)
@@ -32,37 +25,18 @@ After=network.target postgresql.service
 Wants=postgresql.service
 
 [Service]
-# ec2-user, not root. nginx serves uploaded media straight off this user's
-# home directory, and a checkout owned by root cannot be traversed into no
-# matter how it is chmod'ed -- the symptom is a 403 on every product image
-# with nothing obviously wrong to find.
+# ec2-user, not root: nginx must traverse this user's home to serve media.
 User=ec2-user
 Group=ec2-user
 WorkingDirectory=/home/ec2-user/2026b-cosc2767-a2-sg-team-15/webapp/server
 
-# Secrets live in a root-owned file, mode 600, outside the
-# checkout.
-#
-# Serving media off disk requires `chmod o+x /home/ec2-user`, which makes the
-# home directory traversable by every local account. A .env holding
-# SECRET_KEY and the database password inside that directory is readable by
-# anyone who gets a shell. Moving it to /etc keeps the same twelve-factor
-# shape -- configuration arrives through the environment -- while putting the
-# file somewhere the permissions actually mean something.
-#
-# This also prefigures the container work: an EnvironmentFile is the same
-# idea as `--env-file`, and later the same variables come from Secrets
-# Manager without the application changing at all.
+# Root-owned, mode 600, outside the (traversable) checkout.
 EnvironmentFile=/etc/rmit-store/api.env
 
-# Set here rather than in the environment file, because config/wsgi.py reads
-# it before django-environ has loaded anything. Putting it in a file that is
-# parsed later is too late, and the failure is a confusing ImproperlyConfigured
-# rather than an obvious missing variable.
+# Here rather than in the env file: config/wsgi.py reads it before django-environ loads.
 Environment=DJANGO_SETTINGS_MODULE=config.settings.prod
 
-# --bind 127.0.0.1, not 0.0.0.0. nginx is the only thing that should reach
-# gunicorn; the security group is a second line of defence, not the first.
+# --bind 127.0.0.1: only nginx should reach gunicorn.
 ExecStart=/home/ec2-user/2026b-cosc2767-a2-sg-team-15/webapp/server/.venv/bin/gunicorn \
     config.wsgi:application \
     --bind 127.0.0.1:8000 \
@@ -72,9 +46,7 @@ ExecStart=/home/ec2-user/2026b-cosc2767-a2-sg-team-15/webapp/server/.venv/bin/gu
     --error-logfile - \
     --capture-output
 
-# Logs go to the journal, so `journalctl -u rmit-api -f` is the one place to
-# look. The console-backend emails land there too, which is where the seller
-# invitation goes once nothing is watching a terminal.
+# journalctl -u rmit-api -f
 StandardOutput=journal
 StandardError=journal
 SyslogIdentifier=rmit-api
@@ -82,10 +54,7 @@ SyslogIdentifier=rmit-api
 Restart=always
 RestartSec=3
 
-# Cheap hardening. NoNewPrivileges stops the service gaining privileges via
-# setuid binaries; PrivateTmp gives it a /tmp nothing else can read. Neither
-# costs anything here, and both are the sort of thing that is far easier to
-# set now than to retrofit.
+# Cheap hardening.
 NoNewPrivileges=true
 PrivateTmp=true
 

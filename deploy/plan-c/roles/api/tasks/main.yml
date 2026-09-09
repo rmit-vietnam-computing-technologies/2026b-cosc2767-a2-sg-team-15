@@ -5,20 +5,15 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 03/09/2026
-# Last modified: 08/09/2026
+# Last modified: 09/09/2026
 # Acknowledgement: Automates sections 2 to 5.2 of docs/runbooks/plan-b-ec2.md.
 #   Reference: amazon.aws.ec2_metadata_facts,
 #   https://docs.ansible.com/ansible/latest/collections/amazon/aws/ec2_metadata_facts_module.html
 
 ---
-# The API tier.
-#
-# Everything the Plan B runbook does by hand between cloning the repository
-# and starting gunicorn, with one substantive change: no address is typed by
-# a human. ALLOWED_HOSTS is assembled from instance metadata and inventory
-# facts, which is the single biggest source of wasted time in the manual
-# process -- the Elastic IP changed twice during the Plan B session, and each
-# change meant editing four variables by hand.
+# The API tier: clone, venv, config, migrate,
+# collectstatic, gunicorn under systemd, nginx in front. ALLOWED_HOSTS is
+# assembled from instance metadata and inventory, never typed.
 
 - name: Install Python and build tooling
   ansible.builtin.dnf:
@@ -28,11 +23,8 @@
       - libpq-devel
     state: present
 
-# Read this instance's own addresses from IMDS.
-#
-# IMDSv2 is Required on these instances, so the token exchange is mandatory.
-# This module handles it; a plain curl against 169.254.169.254 without a
-# token returns 401 and the failure looks like the metadata service is down.
+# This instance's own addresses from IMDS (v2, token handled
+# by the module).
 - name: Gather EC2 metadata
   amazon.aws.ec2_metadata_facts:
 
@@ -49,18 +41,13 @@
   become: false
   register: api_checkout
 
-# The commit that is actually deployed, read from the checkout rather
-# than passed in. GET /api/version/ reports this, which is how a deploy is
-# verified from outside the instance and how a blue/green cutover is
-# confirmed. A value supplied by hand can be wrong; this one cannot.
+# The deployed commit, read from the checkout; /api/version/ reports it.
 - name: Record the deployed commit
   ansible.builtin.set_fact:
     api_deployed_commit: "{{ api_checkout.after[:7] }}"
 
-# The virtualenv must be at webapp/server/.venv. rmit-api.service references that
-# path, and a venv one level up produces status=203/EXEC from systemd -- an
-# error that says nothing about paths. It also matches the laptop layout in
-# docs/TESTING.md, so one set of instructions works in both places.
+# The virtualenv must be at webapp/server/.venv; rmit-api.service references
+# that path (a wrong path is systemd status=203/EXEC).
 - name: Create the virtualenv and install dependencies
   ansible.builtin.pip:
     requirements: "{{ app_root }}/webapp/server/requirements.txt"
@@ -70,12 +57,8 @@
   become_user: "{{ app_user }}"
   notify: Restart rmit-api
 
-# Configuration to /etc, root-owned, mode 600.
-#
-# Serving media off disk needs the application user's home directory to be
-# world-traversable (below), so a .env inside the checkout would be readable
-# by any local account. Same twelve-factor shape, permissions that mean
-# something -- and the same idea as --env-file once this becomes a container.
+# Configuration to /etc, root-owned, mode 600: the home
+# directory is world-traversable for nginx, so a .env there would be readable.
 - name: Create the configuration directory
   ansible.builtin.file:
     path: /etc/rmit-store
@@ -106,11 +89,8 @@
 # Schema and static files
 # --------------------------------------------------------------------------
 
-# `migrate` is a separate, explicitly ordered step and never runs from the
-# service entrypoint. Two API replicas starting at once would otherwise race
-# to apply the same migration. Ansible runs this on one host at a time, which
-# is the property that makes it safe here and the reason the container work
-# in Plan F keeps migrations out of the entrypoint too.
+# A separate, ordered step, never the service entrypoint,
+# so two replicas cannot race on the schema.
 - name: Apply database migrations
   ansible.builtin.command:
     cmd: "{{ venv_bin }}/python manage.py migrate --noinput"
@@ -154,12 +134,8 @@
     - seed_demo_data | bool
     - api_seed is changed
 
-# collectstatic must run under the SAME settings module as
-# the server. Dev uses StaticFilesStorage and writes no manifest; prod uses
-# whitenoise's manifest storage and requires staticfiles.json. Get this wrong
-# and /static/admin/css/base.css still returns 200 while /admin/login/
-# returns 500 -- so a check that only tested static files would pass a
-# broken deployment.
+# collectstatic under the same settings module as the server:
+# prod writes the whitenoise manifest, dev does not, and the admin 500s without it.
 - name: Collect static files
   ansible.builtin.command:
     cmd: "{{ venv_bin }}/python manage.py collectstatic --noinput"
@@ -178,13 +154,8 @@
     group: "{{ app_user }}"
     mode: "0755"
 
-# nginx runs as its own user and must traverse into the
-# application user's home to reach media/ and staticfiles/.
-#
-# Mode 0711 grants traverse without read, so nothing else in the home
-# directory is listable. Needing this at all is the argument for S3: it works
-# for exactly one instance, and the moment a second API replica exists an
-# image uploaded to one is a 404 from the other.
+# nginx must traverse the application user's home to reach
+# media/ and staticfiles/. 0711: traverse without listing. One instance only.
 - name: Allow nginx to traverse into the application user's home
   ansible.builtin.file:
     path: "/home/{{ app_user }}"
@@ -194,10 +165,8 @@
 # Serving
 # --------------------------------------------------------------------------
 
-# nginx on the API instance serves media and static files off local disk and
-# proxies everything else to gunicorn. gunicorn cannot serve either: Django
-# returns 404 for uploaded media under a production settings module by
-# design, so proxying /media/ straight to port 8000 proxies you to a 404.
+# nginx serves media and static off disk and proxies the rest to gunicorn;
+# Django does not serve media under prod settings.
 - name: Install the API site configuration
   ansible.builtin.template:
     src: api-nginx.conf.j2
@@ -221,10 +190,8 @@
 - name: Flush handlers so later checks see the new configuration
   ansible.builtin.meta: flush_handlers
 
-# Readiness, not liveness. /healthz/ answers as soon as the process binds;
-# /readyz/ opens a database cursor and touches storage, so it is the one that
-# proves this tier is actually able to serve before the web tier is pointed
-# at it.
+# /readyz/, not /healthz/: proves database and storage before
+# the web tier is pointed here.
 - name: Wait for the API to report ready
   ansible.builtin.uri:
     url: "http://{{ api_private_ip }}/readyz/"

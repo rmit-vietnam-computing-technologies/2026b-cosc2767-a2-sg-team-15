@@ -5,7 +5,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 02/09/2026
-# Last modified: 02/09/2026
+# Last modified: 09/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic) in a guided session; the
 #   author reviewed, ran and adapted every case. Endpoint shapes and the
 #   storefront visibility rules are taken from apps/catalog/views.py and
@@ -16,18 +16,9 @@
 """
 Integration tests: the storefront API against the database.
 
-The brief asks for a test proving "the shop endpoint actually returns
-products, proving the API-to-database connection". That is the first test
-below, and it is worth more than it looks: it is the single assertion that
-fails when the database is unreachable, when migrations have not run, when
-``DATABASE_URL`` points at the wrong host, or when the API is up but talking
-to an empty schema. Every one of those is a deployment failure rather than a
-code failure, which is exactly the class this pipeline exists to catch.
-
-The rest cover storefront *visibility*. An inactive product or an inactive
-brand disappearing from the shop is a business rule enforced in a queryset,
-and a queryset is the easiest thing in Django to break with an innocent
-refactor.
+The first test is the brief's "the shop endpoint actually returns products":
+it fails when the database is unreachable, unmigrated or empty. The rest
+cover storefront visibility rules enforced in querysets.
 """
 
 from decimal import Decimal

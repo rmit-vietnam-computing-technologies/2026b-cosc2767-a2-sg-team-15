@@ -5,93 +5,58 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 03/09/2026
-# Last modified: 08/09/2026
+# Last modified: 09/09/2026
 # Acknowledgement: Values derived from deploy/plan-b/api.env.example and the
 #   manual steps in docs/runbooks/plan-b-ec2.md. Reference: Ansible variable
 #   precedence, https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html
 
 ---
-# Deployment variables — TEMPLATE, placeholders only.
-#
+# Deployment variables -- TEMPLATE, placeholders only.
 #   cp group_vars/all.yml.example group_vars/all.yml
-#   $EDITOR group_vars/all.yml
 #
-# group_vars/all.yml is gitignored. This template exists so a marker can see
-# every value the deployment needs without any of the secrets.
-#
-# Two addresses have to be supplied by hand because they are properties of
-# infrastructure this playbook does not provision. CloudFormation in Plan F
-# removes both. Everything else is derived.
-#
-# The manual prerequisites (security groups, deploy keys, the ProxyJump host
-# entry, collections) are listed in inventory.ini.example and in full in
-# docs/runbooks/plan-c-split-tier.md.
+# Two addresses are supplied by hand because this playbook does not
+# provision infrastructure; IaC removes both. Everything else is derived.
+# Prerequisites (security groups, keys, ProxyJump) are in inventory.ini.example.
 
 # --- Addresses -------------------------------------------------------------
 
-# The web instance's Elastic IP. Browsers use it, and it is what the web
-# tier forwards as the Host header — so it must also be in the API's
-# ALLOWED_HOSTS, which roles/api/templates/api.env.j2 handles.
+# The web instance's Elastic IP; forwarded as Host, so also in ALLOWED_HOSTS.
 web_public_ip: REPLACE_WITH_WEB_ELASTIC_IP
 
-# The API instance's private address. Private, not public: traffic between
-# the tiers stays inside the VPC and the API has no route from the internet.
-#
-# This value is read by the WEB host, which renders its nginx upstream from
-# it. The api role overwrites it on the API host with the address IMDS
-# reports, so on that host a typo here is harmless; on the web host it is a
-# 502. Set it to the same value as the [api] entry in inventory.ini.
+# The API instance's private address; the web host renders its nginx
+# upstream from it. Same value as the [api] entry in inventory.ini.
 api_private_ip: REPLACE_WITH_API_PRIVATE_IP
 
 # --- Source ----------------------------------------------------------------
 
 repo_url: git@github.com:rmit-vietnam-computing-technologies/2026b-cosc2767-a2-sg-team-15.git
 
-# The ref both tiers clone and deploy. It is NOT your local checkout: the
-# instances fetch from GitHub, so unpushed commits do not exist as far as
-# they are concerned, and whoever runs this playbook deploys this branch
-# regardless of what they have checked out. dev/backend during the backend
-# workstream; main once the tiers merge.
+# The ref both tiers clone from GitHub. Unpushed commits do not exist.
 repo_version: dev/backend
 
 app_user: ec2-user
 app_root: /home/ec2-user/2026b-cosc2767-a2-sg-team-15
 
-# The virtualenv must sit at webapp/server/.venv. rmit-api.service references that
-# path, and a venv one level up produces status=203/EXEC from systemd — an
-# error that says nothing about paths.
+# rmit-api.service references this path.
 venv_bin: /home/ec2-user/2026b-cosc2767-a2-sg-team-15/webapp/server/.venv/bin
 
 # --- Django ----------------------------------------------------------------
 
-# Generate once, then keep it. Rotating invalidates every session and every
-# outstanding password-reset link:
+# Generate once and keep it (url-safe: systemd reads the env file literally):
 #   python -c "import secrets; print(secrets.token_urlsafe(64))"
-#
-# url-safe base64 rather than Django's get_random_secret_key, whose output
-# contains $ # & * ( ). systemd parses the environment file itself rather
-# than through a shell, so those characters end up literal.
-#
-# In Plan F this moves to Jenkins credentials or SSM Parameter Store and
-# leaves the repository entirely.
 django_secret_key: REPLACE_WITH_GENERATED_SECRET
 
 app_version: "1.0.0"
 
-# prod.py defaults both cookie flags to True. A secure cookie is never sent
-# over http://, so on plain HTTP the admin login accepts the password and
-# bounces back to the login form with no error. Set true the day TLS
-# terminates in front of the web tier.
+# True only once TLS terminates in front of the web tier.
 cookie_secure: false
 
-# (2 x vCPU) + 1 is the usual starting point. 3 suits a t3.small.
+# gunicorn workers; (2 x vCPU) + 1.
 gunicorn_workers: 3
 
 # --- Database --------------------------------------------------------------
 
-# "localhost" runs PostgreSQL on the API instance and the database role
-# applies. An RDS endpoint here skips that role entirely — see
-# docs/adr/0002-database-topology.md for the argument.
+# "localhost" installs PostgreSQL on the API instance; an RDS endpoint skips that role.
 db_host: localhost
 db_port: 5432
 db_name: rmit_store
@@ -100,21 +65,15 @@ db_password: REPLACE_WITH_DATABASE_PASSWORD
 
 # --- Frontend --------------------------------------------------------------
 
-# Relative, because the web tier proxies /api/ to the API instance and the
-# browser sees one origin. An absolute URL would work only if the API were
-# publicly routable, and would then require CORS.
+# Relative: the web tier proxies /api/, so the browser sees one origin.
 web_api_base_url: "/api"
 
-# Where the built SPA is served from. Deliberately not /usr/share/nginx/html:
-# that directory belongs to the nginx package and ships its own files, and
-# a copy into it left the bundle mixed with the vendor's default site.
+# Not /usr/share/nginx/html, which belongs to the nginx package.
 web_root: /var/www/rmit-store
 
 # --- Demo data -------------------------------------------------------------
 
-# Guarded by a marker file on the API instance after the first successful
-# seed, so a re-run reports ok. Set false to skip entirely; the role never
-# un-seeds.
+# Guarded by a marker file, so a re-run reports ok.
 seed_demo_data: true
 seed_admin_email: admin@rmit.edu.au
 seed_admin_password: REPLACE_WITH_ADMIN_PASSWORD
@@ -126,10 +85,7 @@ swap_mb: 2048
 
 # --- Assembled for the manage.py tasks -------------------------------------
 
-# The same variables systemd puts in the service environment, so a command
-# run by the playbook sees exactly what gunicorn will see. Without this the
-# prod boot guard fires on a missing SECRET_KEY, which is correct behaviour
-# and a confusing way to discover a missing environment.
+# The same variables systemd gives the service, so manage.py sees what gunicorn sees.
 django_environment:
   DJANGO_SETTINGS_MODULE: config.settings.prod
   SECRET_KEY: "{{ django_secret_key }}"

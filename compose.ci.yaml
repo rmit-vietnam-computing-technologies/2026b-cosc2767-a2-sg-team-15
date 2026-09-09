@@ -5,35 +5,21 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 07/09/2026
-# Last modified: 08/09/2026
+# Last modified: 09/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic) in a guided session; the
 #   author ran and verified it. Reference: merging Compose files,
 #   https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/
 
 # The test suite, run the way CI runs it.
 #
-# An overlay on compose.yaml rather than a service in it: the test image is
-# never part of a running store, and keeping it here means `docker compose
-# up` cannot start it by accident.
-#
-#     mkdir -p webapp/server/test-reports
+#     mkdir -p webapp/server/test-reports      # or the daemon creates it as root
 #     docker compose -f compose.yaml -f compose.ci.yaml run --rm test
-#
-# That runs pytest --cov-fail-under=60 (the image's CMD) against the same
-# postgres:16 the store uses, and leaves junit.xml and coverage.xml in
-# webapp/server/test-reports/ for the Jenkins publishers. A marker subset is one
-# more argument:
-#
 #     docker compose -f compose.yaml -f compose.ci.yaml run --rm test pytest -m unit
 #
-# The mkdir matters. A bind mount whose host directory does not exist is
-# created by the daemon as root, and the container runs as UID 1000, so the
-# first run in a fresh Jenkins workspace would fail writing the reports.
-#
-# compose.yaml's required variables (SECRET_KEY, POSTGRES_PASSWORD) are
-# checked when the file is parsed, so they must be set even though the test
-# database is throwaway. In CI they come from the pipeline's environment;
-# their values do not matter here.
+# An overlay rather than a service in compose.yaml, so `up` can never start
+# it. Leaves junit.xml and coverage.xml in webapp/server/test-reports/ for
+# the Jenkins publishers. SECRET_KEY and POSTGRES_PASSWORD must still be
+# set; their values do not matter here.
 
 services:
 
@@ -47,8 +33,6 @@ services:
         APP_VERSION: ${APP_VERSION:-1.0.0}
     environment:
       # pytest-django creates test_<name> from this and drops it afterwards.
-      # The postgres image's POSTGRES_USER is a superuser, so CREATEDB is not
-      # a question.
       DATABASE_URL: postgres://${POSTGRES_USER:-rmit}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is not set -- see .env.example}@db:5432/${POSTGRES_DB:-rmit_store}
     volumes:
       - ./webapp/server/test-reports:/app/test-reports

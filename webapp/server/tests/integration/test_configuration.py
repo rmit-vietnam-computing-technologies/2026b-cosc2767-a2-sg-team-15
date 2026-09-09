@@ -5,7 +5,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 02/09/2026
-# Last modified: 02/09/2026
+# Last modified: 09/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic) in a guided session; the
 #   author reviewed, ran and adapted every case. The failure modes covered are
 #   the ones named in the assignment brief: misconfiguration that only shows
@@ -15,30 +15,10 @@
 #   django-environ, https://django-environ.readthedocs.io/en/latest/
 
 """
-Configuration-failure tests.
-
-The brief asks for tests covering "misconfiguration that only shows up in a
-deployed environment". This module is that. Nothing here is about business
-logic; every case is a way a correct build fails on a wrong environment, and
-each one has cost somebody a deployment:
-
-**Boot guards.** ``config.settings.prod`` refuses to start on a default
-``SECRET_KEY`` or an empty ``ALLOWED_HOSTS``. These run in a real subprocess
-rather than by re-importing the module, because the property under test is
-that *the process does not come up* — which is what makes the health check
-never pass, the rollout halt, and the previous version keep serving. An
-import-level test would assert something weaker and would also have to fight
-whatever is already in ``sys.modules``.
-
-**The host header.** A load balancer health check arrives with a ``Host`` of
-the instance's private IP. If that is not in ``ALLOWED_HOSTS``, Django answers
-400, the target group marks a healthy instance unhealthy, and the deployment
-fails in a way that looks like the application is broken. This is trap 7 in
-the brief and it is worth its own tests.
-
-**Readiness.** ``/healthz/`` and ``/readyz/`` answer different questions and
-must fail differently. A probe wired to the wrong one either restarts healthy
-instances or routes traffic to a broken one.
+Misconfiguration that only shows up in a deployed
+environment: prod's boot guards (run in a real subprocess, because the
+property is that the process does not come up), the load-balancer Host
+header, and the difference between /healthz/ and /readyz/.
 """
 
 import json

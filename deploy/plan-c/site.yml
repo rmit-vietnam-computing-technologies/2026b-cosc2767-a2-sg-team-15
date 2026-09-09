@@ -5,30 +5,20 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 03/09/2026
-# Last modified: 03/09/2026
+# Last modified: 09/09/2026
 # Acknowledgement: The steps automated here are the manual ones recorded in
 #   docs/runbooks/plan-b-ec2.md, which were performed by hand first.
 #   Reference: Ansible playbook guide,
 #   https://docs.ansible.com/ansible/latest/playbook_guide/index.html
 
 ---
-# Split-tier deployment.
-#
-# Plan B put the SPA, the API and the database on one instance behind one
-# nginx. This splits them onto two, and automates every step the Plan B
-# runbook performs by hand.
+# Split-tier deployment: API and database on one
+# instance, the SPA behind nginx on another.
 #
 #     ansible-playbook -i inventory.ini site.yml
 #
-# Ordering matters and is expressed by the play order below: the database
-# must accept connections before migrations run, and the API must answer
-# /healthz/ before the web tier is told to proxy to it. Ansible runs plays
-# top to bottom, so this file *is* the dependency graph.
-#
-# Run it twice. The second run should report zero changed tasks -- that is
-# the property that distinguishes configuration management from a shell
-# script, and it is what lets a failed deploy be retried rather than
-# unpicked.
+# Play order is the dependency graph: database, then API, then web.
+# Idempotent; a second run reports zero changed.
 
 - name: Base configuration common to every instance
   hosts: all
@@ -63,10 +53,7 @@
   gather_facts: false
   tags: [verify]
   tasks:
-    # A deploy that finishes without error has not necessarily produced a
-    # working site. This is the cheapest possible proof that it did, and it
-    # runs against the public address rather than localhost so it exercises
-    # the same path a browser takes.
+    # Cheapest proof the deploy produced a working site, via the public address.
     - name: Wait for the storefront to answer
       ansible.builtin.uri:
         url: "http://{{ web_public_ip }}/healthz/"
@@ -78,9 +65,7 @@
       delegate_to: localhost
       become: false
 
-    # /healthz/ is proxied to the API tier, so the verify play passed while the
-    # storefront itself returned 403 on every request. Fetching / and asserting on
-    # the SPA's mount point tests the thing rather than a proxy in front of it.
+    # /healthz/ is proxied, so it once passed while / returned 403. Test / too.
     - name: Confirm the storefront itself renders
       ansible.builtin.uri:
         url: "http://{{ web_public_ip }}/"

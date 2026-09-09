@@ -5,7 +5,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 02/09/2026
-# Last modified: 02/09/2026
+# Last modified: 09/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic) in a guided session; the
 #   author reviewed, ran and adapted every case. Rounding behaviour verified
 #   against the Python decimal module. References:
@@ -13,15 +13,8 @@
 #   pytest-django settings fixture, https://pytest-django.readthedocs.io/en/latest/helpers.html
 
 """
-Unit tests: server-side money and tax.
-
-``money()`` and ``tax_for()`` are two short functions, which makes it tempting
-to skip them. They are the two places a rounding rule can be wrong by a cent
-per line and nothing will ever fail loudly — the store just quietly charges the
-wrong amount, and the first report comes from a customer.
-
-No database. ``tax_for`` reads ``settings.SALES_TAX_RATE``, so the rate is
-overridden per test rather than assumed.
+Unit tests: server-side money and tax. Two short
+functions where a rounding error is a cent per line and never fails loudly.
 """
 
 from decimal import Decimal

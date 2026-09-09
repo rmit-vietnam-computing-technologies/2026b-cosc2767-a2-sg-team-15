@@ -5,7 +5,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 03/09/2026
-# Last modified: 03/09/2026
+# Last modified: 09/09/2026
 # Acknowledgement: Automates section 1 of docs/runbooks/plan-b-ec2.md.
 #   Reference: ansible.builtin.dnf,
 #   https://docs.ansible.com/ansible/latest/collections/ansible/builtin/dnf_module.html
@@ -20,10 +20,7 @@
       - nginx
     state: present
 
-# Swap on a 1 GB instance is the difference between a frontend build
-# completing and being OOM-killed with a bare "Killed" and no stack trace.
-# Cheap enough to apply everywhere rather than reason about which tier needs
-# it, and creates: means a re-run does nothing.
+# Swap: the frontend build is OOM-killed on a 1 GB instance without it.
 - name: Create the swap file
   ansible.builtin.command:
     cmd: dd if=/dev/zero of=/swapfile bs=1M count={{ swap_mb }}
@@ -41,9 +38,7 @@
   register: common_swap_active
   changed_when: false
 
-# `mkswap` on an already-formatted file is an error, so the signature check
-# guards it. This is the pattern for any command module that is not
-# naturally idempotent.
+# `mkswap` on a formatted file is an error; the signature check guards it.
 - name: Check whether the swap file is already formatted
   ansible.builtin.command: file -b /swapfile
   register: common_swap_type
@@ -73,15 +68,8 @@
   changed_when: true
   when: "'/swapfile' not in common_swap_active.stdout"
 
-# Amazon Linux ships a port-80 server block inside
-# nginx.conf, and nginx keeps the first default_server it parses. Since
-# nginx.conf is read before conf.d/, the stock block wins and every request
-# is answered by its 404 page -- including /healthz/, which makes it look
-# like the site config was never installed.
-#
-# Replacing the whole file is more predictable than trying to comment out a
-# block with a regex, and it is the single most confusing failure in the
-# Plan B runbook.
+# Amazon Linux ships a default_server in nginx.conf that wins
+# over conf.d/ and answers everything with its 404 page. Replace the file.
 - name: Install an nginx.conf that does not claim port 80
   ansible.builtin.copy:
     src: nginx.conf

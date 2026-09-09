@@ -5,7 +5,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 02/09/2026
-# Last modified: 02/09/2026
+# Last modified: 09/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic) in a guided session; the
 #   author reviewed, ran and adapted every override. The module occupies the
 #   slot named by the docstring in config/settings/base.py, which lists
@@ -27,61 +27,41 @@ from pathlib import Path
 from .base import *  # noqa: F401,F403
 from .base import DATABASES, LOGGING, REST_FRAMEWORK, STORAGES
 
-# Django forces DEBUG off during tests regardless; stated explicitly so nobody
-# reads this file and assumes otherwise.
+# Django forces this off during tests anyway.
 DEBUG = False
 
-# DRF's APIClient sends Host: testserver. Omit it and
-# every request fails with DisallowedHost before reaching a view — which is
-# also exactly how ALLOWED_HOSTS misconfiguration fails behind a load
-# balancer. The configuration-failure tests assert that behaviour deliberately
-# by overriding this list per-test.
+# DRF's APIClient sends Host: testserver. The
+# configuration tests override this list to reproduce the load-balancer 400.
 ALLOWED_HOSTS = ["testserver", "localhost", "127.0.0.1"]
 
-# Weak hashing, on purpose and only here.
-#
-# The default PBKDF2 hasher runs hundreds of thousands of iterations per call.
-# With a fixture creating four users per test, password hashing dominates the
-# suite — this is typically a 3-5x speedup across a few hundred tests. It must
-# never appear in base.py.
+# Weak hashing, only here: PBKDF2 would dominate a suite that
+# creates four users per test.
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
-# Captures outgoing mail in django.core.mail.outbox instead of printing it, so
-# tests can assert that a password reset or merchant invitation was sent.
+# Outgoing mail lands in django.core.mail.outbox for assertions.
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 
-# Throttling off.
-#
-# base.py throttles auth at 20/min. The authorisation matrix fires far more
-# than 20 requests, so with throttling on the suite fails
-# intermittently and in an order-dependent way — the worst kind of flake,
-# because it looks like a permissions bug. Throttle behaviour gets its own
-# test that re-enables the rate explicitly.
+# Throttling off: the authorisation matrix exceeds the
+# 20/min auth rate and would fail order-dependently.
 REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {
     scope: None for scope in REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]
 }
 
-# Manifest storage requires collectstatic to have run, or any
-# view rendering a static asset raises "Missing staticfiles manifest entry".
-# That would make the admin and browsable-API tests fail for a reason that has
-# nothing to do with what they assert.
+# Manifest storage needs collectstatic to have run; plain
+# storage does not.
 STORAGES["staticfiles"] = {
     "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
 }
 
-# Uploads go to a throwaway directory, never server/media/.
-# conftest.py narrows this to a per-test tmp_path; this is the backstop for
-# anything that runs outside a fixture.
+# Uploads go to a throwaway directory; conftest narrows this per test.
 MEDIA_ROOT = Path(tempfile.mkdtemp(prefix="rmit-test-media-"))
 
-# Never reach S3 from a test, whatever happens to be in the environment.
+# Never reach S3 from a test.
 USE_S3 = False
 
-# Persistent connections confuse pytest-django's transaction
-# rollback between tests and can leave a connection pinned to a dropped test
-# database at teardown.
+# Persistent connections break pytest-django's per-test rollback.
 DATABASES["default"]["CONN_MAX_AGE"] = 0
 
-# Keep failure output readable. A real failure still prints its traceback.
+# Keep failure output readable.
 LOGGING["root"]["level"] = "CRITICAL"
 LOGGING["loggers"]["django"]["level"] = "CRITICAL"

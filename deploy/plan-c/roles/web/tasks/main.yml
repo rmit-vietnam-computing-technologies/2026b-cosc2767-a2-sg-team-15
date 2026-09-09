@@ -5,17 +5,14 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 03/09/2026
-# Last modified: 08/09/2026
+# Last modified: 09/09/2026
 # Acknowledgement: Automates section 5.1 of docs/runbooks/plan-b-ec2.md.
 #   Reference: ansible.builtin.npm,
 #   https://docs.ansible.com/ansible/latest/collections/community/general/npm_module.html
 
 ---
-# The web tier: the SPA and the public entry point.
-#
-# The only instance with a route from the internet. It serves the built
-# bundle from disk and proxies everything Django-shaped to the API instance's
-# private address.
+# The web tier: build the SPA, serve it, proxy the
+# rest to the API instance. The only instance with a route from the internet.
 
 - name: Download the NodeSource setup script
   ansible.builtin.get_url:
@@ -25,10 +22,7 @@
     group: root
     mode: "0700"
 
-# `curl | bash` is the vendor's documented one-liner, but it hides the script
-# from review, cannot be made idempotent, and masks a failed download as a
-# successful no-op because only the last exit code in the pipe survives.
-# Downloading first and then running with `creates:` fixes all three.
+# Download, then run with `creates:` -- idempotent, unlike `curl | bash`.
 - name: Register the NodeSource repository
   ansible.builtin.command:
     cmd: /tmp/nodesource_setup.sh
@@ -53,10 +47,7 @@
     path: "{{ app_root }}/webapp/client/node_modules/.package-lock.json"
   register: web_node_modules
 
-# `npm ci` deletes and reinstalls node_modules by design, so it can never
-# report ok on its own. Guarding on the checkout gives the same guarantee --
-# dependencies match the lockfile that was just cloned -- without reinstalling
-# several hundred packages on every run.
+# `npm ci` always reinstalls, so guard on whether the checkout changed.
 - name: Install frontend dependencies
   community.general.npm:
     path: "{{ app_root }}/webapp/client"
@@ -70,9 +61,7 @@
     path: "{{ app_root }}/webapp/client/dist/index.html"
   register: web_dist
 
-# Conditioned on the checkout rather than `creates:`. With `creates:` the
-# bundle is pinned forever: once dist/index.html exists the build never runs
-# again, so a frontend change deploys silently as the previous bundle.
+# On checkout change, not `creates:`, or a frontend change never rebuilds.
 - name: Build the SPA bundle
   ansible.builtin.command:
     cmd: npm run build

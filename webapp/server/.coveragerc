@@ -5,16 +5,13 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 02/09/2026
-# Last modified: 02/09/2026
+# Last modified: 09/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic) in a guided session; the
 #   author reviewed and verified the resulting report. Reference:
 #   coverage.py configuration reference, https://coverage.readthedocs.io/en/latest/config.html
 
-# What counts as covered.
-#
-# Measuring only apps/ keeps the number honest. Including migrations and
-# settings inflates it with code that is either generated or executed by the
-# act of starting up, which makes the figure look good and mean nothing.
+# Measure apps/ only; migrations and settings would
+# inflate the figure without meaning anything.
 
 [run]
 source = apps

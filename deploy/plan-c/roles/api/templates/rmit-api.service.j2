@@ -6,7 +6,7 @@ Assessment: Assignment 2
 Author: Vo Hoang Khanh
 ID: s3926310
 Created  date: 03/09/2026
-Last modified: 08/09/2026
+Last modified: 09/09/2026
 Acknowledgement: Templated from deploy/plan-b/rmit-api.service. Reference:
   systemd.exec, https://www.freedesktop.org/software/systemd/man/systemd.exec.html
 -#}
@@ -26,18 +26,13 @@ User={{ app_user }}
 Group={{ app_user }}
 WorkingDirectory={{ app_root }}/webapp/server
 
-# Root-owned, mode 600, outside the checkout. systemd reads
-# this as root before dropping to {{ app_user }}, so the application never
-# needs permission to read its own secrets.
+# Root-owned, mode 600, outside the checkout.
 EnvironmentFile=/etc/rmit-store/api.env
 
-# Set here, not in the environment file: config/wsgi.py reads it before
-# django-environ has parsed anything, so a value in a file loaded later is
-# too late and the failure is a confusing ImproperlyConfigured.
+# Here, not in the env file: config/wsgi.py reads it before django-environ loads.
 Environment=DJANGO_SETTINGS_MODULE=config.settings.prod
 
-# Bound to localhost. nginx on this instance is the only thing that reaches
-# gunicorn; the security group is the second line of defence, not the first.
+# Localhost: only nginx on this instance reaches gunicorn.
 ExecStart={{ venv_bin }}/gunicorn config.wsgi:application \
     --bind 127.0.0.1:8000 \
     --workers {{ gunicorn_workers }} \

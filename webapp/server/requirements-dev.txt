@@ -5,42 +5,31 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 02/09/2026
-# Last modified: 02/09/2026
+# Last modified: 09/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic) in a guided session; the
 #   author reviewed, installed and verified every dependency. References:
 #   pytest documentation, https://docs.pytest.org/
 #   pytest-django documentation, https://pytest-django.readthedocs.io/
 
-# Test-only dependencies.
-#
-# Separate from requirements.txt on purpose. The runtime image must not ship a
-# test runner: it is dead weight in every container and it widens the attack
-# surface of a production process for no benefit. CI installs both files; the
-# runtime Dockerfile installs only requirements.txt.
+# Test-only dependencies; the runtime image installs
+# only requirements.txt.
 
 -r requirements.txt
 
-# Runner. Chosen over Django's built-in `manage.py test` for parametrize,
-# fixtures and native JUnit XML — see docs/adr/0001-testing-stack.md.
+# Runner: parametrize, fixtures and native JUnit XML.
 pytest~=8.3
 pytest-django~=4.9
 
 # Coverage, reported as Cobertura XML for the Jenkins coverage plugin.
 pytest-cov~=6.0
 
-# Parallel execution. Optional locally (`-n auto`), worth it in CI once the
-# integration suite grows.
+# Parallel execution, optional (`-n auto`).
 pytest-xdist~=3.6
 
-# Deterministic clocks. The payment gateway's expiry check compares against
-# today's date, so without this the expiry tests rot silently — they would
-# start failing in whichever month the fixture card expires.
+# Frozen clock for the card-expiry tests.
 freezegun~=1.5
 
-# Drives the smoke suite against a deployed URL. Not used by unit or
-# integration tests, which go through Django's in-process test client.
+# Smoke suite HTTP client.
 requests~=2.32
 
-# NOTE: version ranges rather than exact pins while the suite is being built.
-# Freeze with `pip freeze > requirements-dev.lock` once CI is green, so a
-# rebuild three weeks from now resolves the same tree.
+# Ranges rather than pins; freeze once CI is stable.

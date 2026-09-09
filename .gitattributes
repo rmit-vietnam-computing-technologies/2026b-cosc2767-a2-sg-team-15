@@ -5,33 +5,17 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 02/09/2026
-# Last modified: 08/09/2026
+# Last modified: 09/09/2026
 # Acknowledgement: Git line-ending guidance, https://git-scm.com/docs/gitattributes
 
 # ---------------------------------------------------------------------------
-# Line endings
-#
-# The team works across Windows and Linux. Git for Windows defaults to
-# core.autocrlf=true, so a shell script authored on Windows can reach a
-# container with CRLF endings and fail at run time with:
-#
-#     /entrypoint.sh: line 2: $'\r': command not found
-#     exec /entrypoint.sh: no such file or directory
-#
-# The second one is the worst kind of bug in this assignment: the kernel is
-# reporting that the interpreter "/bin/sh\r" does not exist, but the message
-# names the script, so it reads as a missing file. Pinning eol here means the
-# repository is the single source of truth and nobody's local git config can
-# produce it.
-#
-# Deliberately NOT `* text=auto eol=lf`. Two upstream files
-# (webapp/client/src/styles/main.scss and _variables.scss) are stored with CRLF, and a
-# blanket rule would rewrite them — putting two vendored files into the
-# modifications table in docs/UPSTREAM.md for no reason. Scoping to the
-# extensions we author leaves the import byte-identical.
+# Line endings. The team works across Windows and Linux; a CRLF shell script
+# fails inside a container with "exec: no such file or directory". Scoped to
+# the extensions we author rather than `* text=auto`, so two upstream files
+# stored with CRLF (webapp/client/src/styles/*.scss) stay byte-identical.
 # ---------------------------------------------------------------------------
 
-# --- Must be LF: anything a Linux host executes or parses ------------------
+# --- LF: anything a Linux host executes or parses ---------------------------
 *.sh            text eol=lf
 *.bash          text eol=lf
 *.py            text eol=lf
@@ -55,12 +39,12 @@ Makefile        text eol=lf
 Jenkinsfile     text eol=lf
 *.md            text eol=lf
 
-# --- Must be CRLF: only ever run by Windows --------------------------------
+# --- CRLF: only ever run by Windows -----------------------------------------
 *.ps1           text eol=crlf
 *.bat           text eol=crlf
 *.cmd           text eol=crlf
 
-# --- Binary: never touched, never diffed as text ---------------------------
+# --- Binary ------------------------------------------------------------------
 *.png           binary
 *.jpg           binary
 *.jpeg          binary
@@ -77,5 +61,5 @@ Jenkinsfile     text eol=lf
 *.tar           binary
 *.pem           binary
 
-# --- Keep generated lockfiles out of PR diffs ------------------------------
+# --- Collapse generated lockfiles in PR diffs -------------------------------
 package-lock.json   linguist-generated=true

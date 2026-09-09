@@ -6,7 +6,7 @@ Assessment: Assignment 2
 Author: Vo Hoang Khanh
 ID: s3926310
 Created  date: 03/09/2026
-Last modified: 03/09/2026
+Last modified: 09/09/2026
 Acknowledgement: The SPA half of deploy/plan-b/nginx-rmit-store.conf, with the
   Django locations repointed from localhost to the API instance. Reference:
   nginx try_files,
@@ -15,20 +15,12 @@ Acknowledgement: The SPA half of deploy/plan-b/nginx-rmit-store.conf, with the
 # MANAGED BY ANSIBLE -- edits here are overwritten on the next run.
 # Source: deploy/plan-c/roles/web/templates/web-nginx.conf.j2
 
-# The public entry point.
-#
-# One difference from Plan B, and it is the whole of the split: the Django
-# locations proxy to {{ api_private_ip }}:80 instead of 127.0.0.1:8000.
-#
-# The browser still sees a single origin, because /api/ is proxied here
-# rather than the SPA calling the API instance directly. That is deliberate:
-# it keeps the bundle free of any absolute API address, so the same artifact
-# is promotable between environments, and it means no cross-origin request is
-# ever made. An ALB in front of two target groups does exactly this.
+# The public entry point. Proxies the Django locations
+# to the API instance; the browser still sees one origin, so the bundle
+# carries no absolute API address and no cross-origin request is made.
 
 upstream rmit_api {
-    # The API instance's private address, from Ansible inventory. Traffic
-    # never leaves the VPC, and the API has no public route at all.
+    # The API instance's private address, from inventory.
     server {{ api_private_ip }}:80;
     keepalive 16;
 }
@@ -47,45 +39,27 @@ server {
     gzip_types      text/css application/javascript application/json image/svg+xml;
     gzip_min_length 1024;
 
-    # --- The SPA -----------------------------------------------------------
-    # An unknown path is a Vue route, not a missing file. Without the
-    # fallback, navigating to /shop inside the app works and refreshing that
-    # page returns 404 -- a bug that only appears on reload, which is exactly
-    # the kind that survives manual testing.
+    # --- The SPA: an unknown path is a Vue route, not a missing file --------
     location / {
         try_files $uri $uri/ /index.html;
     }
 
-    # Never cache runtime configuration. Caching it means editing the API
-    # address on the server does nothing until every browser hard-reloads,
-    # which defeats the design.
+    # Never cache runtime configuration.
     location = /config.js {
         add_header Cache-Control "no-store";
     }
 
-    # Hashed filenames are immutable by construction: a changed file gets a
-    # changed name, so this can never serve something stale.
+    # Hashed filenames are immutable.
     location /assets/ {
         add_header Cache-Control "public, max-age=31536000, immutable";
     }
 
-    # --- Everything the API tier owns ---------------------------------------
-    # /media/ and /static/ are included because those files live on the API
-    # instance now. In Plan B they were local; splitting the tiers moved them
-    # across a network boundary, which is the change S3 eventually makes
-    # irrelevant.
+    # --- Everything the API tier owns, /media/ and /static/ included ---------
     location ~ ^/(api|admin|healthz|readyz|media|static)(/|$) {
         proxy_pass http://rmit_api;
 
-        # $host is this instance's public address, which is
-        # what a browser typed. The API tier forwards it unchanged to Django,
-        # which builds image_url from it. Send $proxy_host instead and every
-        # product image points at a private IP -- broken in every browser,
-        # perfect from a shell on either instance.
-        #
-        # This value must appear in the API's ALLOWED_HOSTS, which is why the
-        # template there reads web_public_ip rather than the API's own
-        # address.
+        # Forward the browser's Host: Django builds image_url
+        # from it, and it must be in the API's ALLOWED_HOSTS.
         proxy_set_header Host              $host;
         proxy_set_header X-Forwarded-Host  $host;
         proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
@@ -94,9 +68,7 @@ server {
         proxy_set_header Connection "";
         proxy_redirect off;
 
-        # Fail fast rather than hang. If the API tier is down, a 502 in five
-        # seconds is a better answer than a browser spinning for a minute,
-        # and it is what a health check needs to see.
+        # Fail fast: a 502 in five seconds beats a browser spinning.
         proxy_connect_timeout 5s;
         proxy_read_timeout    60s;
     }

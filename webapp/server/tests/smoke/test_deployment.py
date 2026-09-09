@@ -5,7 +5,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 02/09/2026
-# Last modified: 02/09/2026
+# Last modified: 09/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic) in a guided session; the
 #   author reviewed, ran and adapted every case. The checks follow the
 #   "Verifying a deployment" section of the upstream README and the endpoint
@@ -16,21 +16,10 @@
 """
 Deployment smoke tests: the API tier.
 
-The brief calls these "the cheapest and most valuable tests in the whole
-pipeline", and it is right. Every assertion here fails for a reason no amount
-of unit or integration testing can catch, because each one is a property of a
-*deployment* rather than of the code: an environment variable that was never
-set, a migration that did not run, a ``collectstatic`` that was skipped, a
-database the container cannot reach, a proxy rewriting a header.
-
-They are also what makes automated rollback possible. A deploy that passes
-its smoke suite is promoted; one that fails is rolled back before it takes
-traffic, and the previous version keeps serving. That decision needs a check
-that runs in seconds against the real thing, from outside it.
-
-Ordering is deliberate: liveness, then readiness, then identity, then
-behaviour. A failure in the first group makes every later failure
-meaningless, so read the first red line and ignore the rest.
+Each assertion is a property of a deployment, not of the code: an unset
+variable, a skipped migration or collectstatic, an unreachable database, a
+proxy rewriting a header. Ordered liveness, readiness, identity, behaviour;
+read the first red line.
 """
 
 import os

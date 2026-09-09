@@ -5,7 +5,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 02/09/2026
-# Last modified: 02/09/2026
+# Last modified: 09/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic) in a guided session; the
 #   author reviewed, ran and adapted every case. Card numbers and expected
 #   decline codes are taken from the module docstring in
@@ -16,15 +16,9 @@
 """
 Unit tests: the payment gateway in isolation.
 
-``apps/orders/payments.py`` is the cleanest unit-test target in the codebase.
-No network, no database, no clock except where injected — every function is
-pure input to output, so a failure here can only mean the logic is wrong.
-
-Two properties are worth stating because they are what make these tests cheap
-enough to run on every commit and every deployment: the gateway is simulated,
-so there is no provider, account, key or outbound call; and a declined card
-leaves no order and takes no stock, so the decline numbers are safe to fire
-repeatedly from CI and from a post-deploy check on a private subnet.
+``apps/orders/payments.py`` is pure input to output: no network, no database,
+no clock except where injected. The gateway is simulated, so these run
+anywhere.
 """
 
 import dataclasses

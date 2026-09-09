@@ -5,7 +5,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 02/09/2026
-# Last modified: 02/09/2026
+# Last modified: 09/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic) in a guided session; the
 #   author reviewed, ran and adapted every case. The ordering guarantee under
 #   test (stock checked, card authorised, then rows written) is documented in
@@ -14,20 +14,11 @@
 #   DRF status codes, https://www.django-rest-framework.org/api-guide/status-codes/
 
 """
-Integration tests: checkout.
+Integration tests: checkout, through ``POST /api/orders/``.
 
-The money path. Everything here goes through ``POST /api/orders/`` rather
-than calling the service directly, because the properties worth asserting are
-properties of the *whole* path: the serializer refusing to read a price from
-the request, the permission class refusing an anonymous caller, the gateway
-raising inside an atomic block, and the database rolling the whole thing back
-when it does.
-
-``test_declined_card_leaves_no_order_and_takes_no_stock`` is the most valuable
-test in the suite. The implementation it guards against — take the stock
-first, put it back if the card fails — is not a hypothetical: it is the
-ordering most people write first, and it lets a stream of failed checkouts
-empty a shelf while every individual request looks like it behaved correctly.
+The key test is ``test_declined_card_leaves_no_order_and_takes_no_stock``:
+the obvious implementation (take stock, refund on decline) lets a stream of
+failed checkouts empty a shelf.
 """
 
 from decimal import Decimal

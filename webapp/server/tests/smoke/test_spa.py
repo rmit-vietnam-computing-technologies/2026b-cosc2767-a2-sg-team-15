@@ -5,7 +5,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 02/09/2026
-# Last modified: 02/09/2026
+# Last modified: 09/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic) in a guided session; the
 #   author reviewed, ran and adapted every case. The runtime-configuration
 #   contract is documented in client/public/config.js and in the nginx
@@ -15,16 +15,8 @@
 """
 Deployment smoke tests: the frontend tier.
 
-Separate from the API checks and gated on its own ``SMOKE_SPA_BASE_URL``,
-because the two tiers are only the same origin behind a single nginx. Once
-they are split onto separate instances they are different hosts, and a suite
-that assumed otherwise would quietly test the API twice and report the
-frontend healthy without ever having contacted it.
-
-Set both variables to the same value for a single-host deployment; set them
-differently once the tiers are split. Leave ``SMOKE_SPA_BASE_URL`` unset and
-this whole module skips, which is the correct behaviour when smoking an
-API-only environment.
+Gated on its own ``SMOKE_SPA_BASE_URL`` because the tiers are only the same
+origin behind one nginx. Unset, this module skips.
 """
 
 import pytest

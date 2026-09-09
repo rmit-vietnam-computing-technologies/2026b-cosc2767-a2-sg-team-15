@@ -5,18 +5,14 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 02/09/2026
-# Last modified: 02/09/2026
+# Last modified: 09/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic) in a guided session; the
 #   author reviewed, ran and adapted every fixture. Reference:
 #   pytest-django fixtures, https://pytest-django.readthedocs.io/en/latest/helpers.html
 
 """
-Shared fixtures for the whole suite.
-
-Four roles matter to this application — anonymous, member, merchant and admin —
-because almost every permission decision in the API reads ``User.role``. They
-are defined once here so the authorisation matrix can parametrise over them
-rather than rebuilding users in every module.
+Shared fixtures. The four roles -- anonymous, member, merchant, admin -- are
+built once here because almost every permission decision reads ``User.role``.
 """
 
 from decimal import Decimal

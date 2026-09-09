@@ -5,7 +5,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 02/09/2026
-# Last modified: 02/09/2026
+# Last modified: 09/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic) in a guided session; the
 #   author reviewed, ran and adapted every fixture. Reference:
 #   requests documentation, https://requests.readthedocs.io/en/latest/
@@ -13,29 +13,14 @@
 """
 Fixtures for the deployment smoke suite.
 
-    SMOKE_BASE_URL=http://localhost:8000        pytest -m smoke --no-cov
-    SMOKE_BASE_URL=http://staging.example.com   pytest -m smoke --no-cov
-    SMOKE_BASE_URL=http://prod.example.com      pytest -m smoke --no-cov
+    SMOKE_BASE_URL=http://<host>   pytest -m smoke --no-cov
 
-**Always pass --no-cov.** These tests execute no local application code, so a
-smoke run measures roughly zero percent and overwrites
-``test-reports/coverage.xml`` with that figure. The report is written on
-every run by design; this is the one run where you do not want it.
-
-Environment variables, all optional except the first:
-
-    SMOKE_BASE_URL          the API origin. Nothing runs without it.
-    SMOKE_SPA_BASE_URL      the frontend origin. Same value as the API origin
-                            behind one nginx; a different one once the tiers
-                            are split. Unset means the SPA checks skip.
-    SMOKE_EXPECTED_COMMIT   the commit the pipeline just deployed. When set,
-                            /api/version/ must report exactly this.
-    SMOKE_EXPECTED_VERSION  likewise for APP_VERSION.
-    SMOKE_TIMEOUT           per-request timeout in seconds (default 10).
-    SMOKE_WAIT              seconds to wait for the deployment to answer
-                            before giving up (default 60).
-    SMOKE_MEMBER_EMAIL      credentials for the opt-in authenticated checks.
-    SMOKE_MEMBER_PASSWORD   Unset means those skip.
+Always --no-cov: these tests run no local code and would overwrite
+coverage.xml with ~0%. Optional variables, each skipping its checks when unset:
+SMOKE_SPA_BASE_URL (frontend origin), SMOKE_EXPECTED_COMMIT and
+SMOKE_EXPECTED_VERSION (what /api/version/ must report), SMOKE_MEMBER_EMAIL
+and SMOKE_MEMBER_PASSWORD (authenticated checks), SMOKE_TIMEOUT (10s),
+SMOKE_WAIT (60s for the deployment to answer).
 """
 
 import os

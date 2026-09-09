@@ -6,24 +6,16 @@ Assessment: Assignment 2
 Author: Vo Hoang Khanh
 ID: s3926310
 Created  date: 03/09/2026
-Last modified: 08/09/2026
+Last modified: 09/09/2026
 Acknowledgement: Templated from webapp/client/public/config.js, which the upstream
   README documents as the runtime-configuration mechanism.
 -#}
 // MANAGED BY ANSIBLE -- edits here are overwritten on the next run.
 // Source: deploy/plan-c/roles/web/templates/config.js.j2
 //
-// Read by the browser at page load, not compiled in.
-//
-// This is what makes one built bundle promotable from staging to production
-// unchanged. Rebuilding per environment is the anti-pattern the design
-// avoids, and it is why this file is served with Cache-Control: no-store.
-//
-// A relative "/api" is correct here: the web tier proxies that prefix to the
-// API instance, so the browser only ever talks to one origin and no
-// cross-origin request is made. Setting an absolute API address would work
-// too, but then CORS applies and the API's private address is not reachable
-// from a browser anyway.
+// Read by the browser at page load, not compiled in,
+// so one built bundle is promotable unchanged. Relative "/api" because the
+// web tier proxies that prefix and the browser sees one origin.
 window.__APP_CONFIG__ = {
   API_BASE_URL: "{{ web_api_base_url }}",
 };
