@@ -45,24 +45,20 @@ pipeline {
         // Pushing to ECR
         stage('Push to ECR') {
             steps {
-                echo 'Pushing image to ECR...'
                 script {
-                    sh '''
-                        
-                        aws ecr get-login-password --region ${AWS_REGION} | \
-                            docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
-                        
-                        
-                        docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ${ECR_URI}:${DOCKER_TAG}
-                        
-                        
-                        docker push ${ECR_URI}:${DOCKER_TAG}
-                    '''
+                    withAWS(credentials: 'aws-credentials-id', region: 'us-east-1') {
+                        sh '''
+                            aws ecr get-login-password --region ${AWS_REGION} | \
+                                docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                    
+                            docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ${ECR_URI}:${DOCKER_TAG}
+                            docker push ${ECR_URI}:${DOCKER_TAG}
+                        '''
+                    }
                 }
-                echo 'Image pushed to ECR successfully'
+            echo "Pushed image to ECR correctly"
             }
         }
-    }
 
     post {
         success {
