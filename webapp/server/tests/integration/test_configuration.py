@@ -11,7 +11,8 @@
 #   the ones named in the assignment brief: misconfiguration that only shows
 #   up in a deployed environment, and the ALLOWED_HOSTS interaction with a
 #   load balancer health check. References:
-#   Django settings and ALLOWED_HOSTS, https://docs.djangoproject.com/en/5.1/ref/settings/#allowed-hosts
+#   Django settings and ALLOWED_HOSTS,
+#   https://docs.djangoproject.com/en/5.1/ref/settings/#allowed-hosts
 #   django-environ, https://django-environ.readthedocs.io/en/latest/
 
 """
@@ -85,6 +86,7 @@ def _boot(settings_module="config.settings.prod", **overrides):
         capture_output=True,
         text=True,
         timeout=120,
+        check=False,  # a non-zero exit is the thing under test
     )
 
 
