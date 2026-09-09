@@ -2,117 +2,71 @@ pipeline {
     agent any
 
     environment {
+        // Docker image info
         DOCKER_IMAGE_NAME = 'rmit-store-frontend'
-        DOCKER_TAG = "${env.BUILD_ID}"
-        DEPLOY_EC2_IP = '172.31.21.36'
-        DEPLOY_EC2_USER = 'ec2-user'
+        DOCKER_TAG = "v2"
+        
+        //ECR information
+        AWS_ACCOUNT_ID = '909892551050'          
+        AWS_REGION = 'us-east-1'
+        ECR_REPO_NAME = 'rmit-store-frontend'    
+        ECR_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
     }
 
     stages {
-
-        // STAGE 2: TEST FRONTEND (PLACEHOLDER)
-        stage('Test Frontend') {
+        // Ensure docker is running
+        stage('Ensure docker is running') {
             steps {
-                echo 'Placeholder testing(To be added later)'
-                dir('webapp/client') {
-                    // sh 'npm run test:unit'
-                }
-                echo 'Tests passed'
+               sh '''
+                if ! docker ps &> /dev/null; then
+                    echo "Docker has not started"
+                    sudo service docker start
+                    sleep 10
+                    docker ps &> /dev/null || (echo "Docker failed to start" && exit 1)
+                else
+                    echo "Docker is already running."
+                fi
+               '''
+
             }
         }
 
-        // STAGE 3: COPY CODE TO DOCKER SERVER (AS EC2-USER)
-        stage('Deleting old files and copying Frontend Code to Docker Server') {
-            steps {
-                echo 'Copying produced /dist and relevant files into ec2-user home client folder'
-                script {
-                    sh """
-                        ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
-                         rm -rf /home/ec2-user/client
-                        mkdir -p /home/ec2-user/client
-                        "
-                        
-                        scp -r -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem \
-                            webapp/client/. \
-                            ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP}:/home/ec2-user/client/
-
-                    """
-                }
-                echo 'Frontend code copied'
-            }
-        }
-
-        //  STAGE 4: ENSURE DOCKER IS RUNNING ON EC2 INSTANCE
-        stage('Ensure Docker is Running on EC2 instance') {
-            steps {
-                echo 'Checking if Docker is currently running on deployed EC2 instance'
-                script {
-                    sh """
-                        ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
-                            if ! sudo docker ps &> /dev/null; then
-                                echo 'Docker is currently not running. Starting Docker...'
-                                sudo service docker start
-                                sleep 5
-                                if sudo docker ps &> /dev/null; then
-                                    echo 'Docker started successfully.'
-                                else
-                                    echo 'Failed to start Docker.'
-                                    exit 1
-                                fi
-                            else
-                                echo 'Docker is already running.'
-                            fi
-                        "
-                    """
-                }
-                echo 'Docker is ready!'
-            }
-        }
-
-        // STAGE 5: BUILD DOCKER IMAGE FROM DOCKERFILE
+        // 
         stage('Build Docker Image') {
             steps {
-                echo 'Building Docker image on Docker Server and deleting any previous container'
-                script {
-                    sh """
-                        ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
-                            cd /home/ec2-user/client
-                            sudo docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} .
-                        "
-                    """
+                echo 'Building Docker image...'
+                dir('webapp/client') {
+                    sh 'docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} .'
                 }
-                echo 'Docker image built on Docker Server'
+                echo 'Docker image built'
             }
         }
 
-        // STAGE 6: DEPLOY FRONTEND on DOCKER SERVER EC2
-        stage('Deploy Frontend to EC2 on port 8080') {
+        // Pushing to ECR
+        stage('Push to ECR') {
             steps {
-                echo 'Deploying frontend to EC2'
                 script {
-                    sh """
-                        ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/.ssh/devops_project_key.pem ${DEPLOY_EC2_USER}@${DEPLOY_EC2_IP} "
-                            # Stop running containers
-                            sudo docker stop frontend-container || true
-                            sudo docker rm frontend-container || true
-                            
-                            # Run new containers
-                            sudo docker run -d \\
-                                --name frontend-container \\
-                                -p 80:80 \\
-                                --restart unless-stopped \\
-                                ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
-                        "
-                    """
+                    withCredentials([
+                string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
+                string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
+                string(credentialsId: 'aws-session-token', variable: 'AWS_SESSION_TOKEN')
+            ]) {
+                        sh '''
+                            aws ecr get-login-password --region ${AWS_REGION} | \
+                                docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                    
+                            docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ${ECR_URI}:${DOCKER_TAG}
+                            docker push ${ECR_URI}:${DOCKER_TAG}
+                        '''
+                    }
                 }
-                echo 'Deployment completed!'
+            echo "Pushed image to ECR correctly"
             }
         }
     }
-
     post {
         success {
-            echo 'Pipeline succeeded'
+            echo 'Pipeline suceeded'
         }
         failure {
             echo 'Pipeline failed'
