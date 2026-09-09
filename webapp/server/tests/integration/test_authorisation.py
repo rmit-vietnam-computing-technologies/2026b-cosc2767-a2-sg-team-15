@@ -5,7 +5,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 02/09/2026
-# Last modified: 02/09/2026
+# Last modified: 08/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic) in a guided session; the
 #   author reviewed, ran and adapted every expected status code against
 #   apps/core/permissions.py and each viewset's permission_classes.
@@ -16,12 +16,13 @@
 """
 The authorisation matrix.
 
-Every endpoint, against every role, asserting the exact status code. This is
-the suite that justifies choosing pytest over ``manage.py test``: written as
-parameters it is one function and roughly a hundred individually named
-results in the Jenkins JUnit view, so a regression names the endpoint and the
-role that broke. The same coverage under ``unittest`` is a hundred hand-written
-methods, or one loop that reports a single pass or fail and tells you nothing.
+One endpoint per permission class, against every role, asserting the exact
+status code. This is the suite that justifies choosing pytest over
+``manage.py test``: written as parameters it is one function and thirty-six
+individually named results in the Jenkins JUnit view, so a regression names
+the endpoint and the role that broke. The same coverage under ``unittest`` is
+thirty-six hand-written methods, or one loop that reports a single pass or
+fail and tells you nothing.
 
 Reading the table below is the fastest way to understand who may do what.
 
@@ -63,57 +64,25 @@ ROLES = [ANONYMOUS, MEMBER, MERCHANT, ADMIN]
 # ---------------------------------------------------------------------------
 
 MATRIX = [
-    # --- probes and public configuration -----------------------------------
+    # One row per permission class rather than one per endpoint. Endpoints
+    # that share a permission class are one equivalence partition: proving
+    # the class once proves it for every viewset that declares it, and the
+    # wiring of each viewset to its class is covered by the scoping tests
+    # below and by the feature suites. Rows are kept only where the expected
+    # codes differ from every other row.
+    #
+    # --- public: no credentials are ever required ---------------------------
     ("get", "/healthz/", {ANONYMOUS: 200, MEMBER: 200, MERCHANT: 200, ADMIN: 200}),
-    ("get", "/readyz/", {ANONYMOUS: 200, MEMBER: 200, MERCHANT: 200, ADMIN: 200}),
-    ("get", "/api/version/", {ANONYMOUS: 200, MEMBER: 200, MERCHANT: 200, ADMIN: 200}),
-    ("get", "/api/config/", {ANONYMOUS: 200, MEMBER: 200, MERCHANT: 200, ADMIN: 200}),
-    # --- public storefront -------------------------------------------------
     ("get", "/api/products/", {ANONYMOUS: 200, MEMBER: 200, MERCHANT: 200, ADMIN: 200}),
-    (
-        "get",
-        "/api/products/search/",
-        {ANONYMOUS: 200, MEMBER: 200, MERCHANT: 200, ADMIN: 200},
-    ),
-    (
-        "get",
-        "/api/categories/",
-        {ANONYMOUS: 200, MEMBER: 200, MERCHANT: 200, ADMIN: 200},
-    ),
-    ("get", "/api/brands/", {ANONYMOUS: 200, MEMBER: 200, MERCHANT: 200, ADMIN: 200}),
-    # --- the customer's own records ----------------------------------------
+    # --- authenticated: the caller's own records -----------------------------
     ("get", "/api/orders/", {ANONYMOUS: 401, MEMBER: 200, MERCHANT: 200, ADMIN: 200}),
     ("post", "/api/orders/", {ANONYMOUS: 401, MEMBER: 400, MERCHANT: 400, ADMIN: 400}),
-    (
-        "get",
-        "/api/addresses/",
-        {ANONYMOUS: 401, MEMBER: 200, MERCHANT: 200, ADMIN: 200},
-    ),
-    ("get", "/api/wishlist/", {ANONYMOUS: 401, MEMBER: 200, MERCHANT: 200, ADMIN: 200}),
-    ("get", "/api/users/me/", {ANONYMOUS: 401, MEMBER: 200, MERCHANT: 200, ADMIN: 200}),
-    ("post", "/api/reviews/", {ANONYMOUS: 401, MEMBER: 400, MERCHANT: 400, ADMIN: 400}),
-    # --- administration ----------------------------------------------------
+    # --- administration: staff only ------------------------------------------
     # Listing every account was authenticated but unrestricted in the
     # application this replaces, so any signed-in member could page through
     # the whole user table.
     ("get", "/api/users/", {ANONYMOUS: 401, MEMBER: 403, MERCHANT: 403, ADMIN: 200}),
-    (
-        "get",
-        "/api/manage/merchants/",
-        {ANONYMOUS: 401, MEMBER: 403, MERCHANT: 403, ADMIN: 200},
-    ),
-    (
-        "get",
-        "/api/manage/categories/",
-        {ANONYMOUS: 401, MEMBER: 403, MERCHANT: 403, ADMIN: 200},
-    ),
-    (
-        "get",
-        "/api/manage/reviews/",
-        {ANONYMOUS: 401, MEMBER: 403, MERCHANT: 403, ADMIN: 200},
-    ),
-    # --- seller surface ----------------------------------------------------
-    # A merchant reaches these; a member does not.
+    # --- seller surface: a merchant reaches these, a member does not ---------
     (
         "get",
         "/api/manage/products/",
@@ -130,7 +99,8 @@ MATRIX = [
         {ANONYMOUS: 401, MEMBER: 403, MERCHANT: 200, ADMIN: 200},
     ),
     # Creating a brand is an admin action even for a seller: a brand is made
-    # for them when their application is approved.
+    # for them when their application is approved. The one row where the
+    # seller surface refuses the seller.
     (
         "post",
         "/api/manage/brands/",

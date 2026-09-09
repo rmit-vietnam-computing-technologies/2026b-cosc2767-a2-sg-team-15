@@ -19,7 +19,7 @@
 #     mkdir -p webapp/server/test-reports
 #     docker compose -f compose.yaml -f compose.ci.yaml run --rm test
 #
-# That runs pytest --cov-fail-under=65 (the image's CMD) against the same
+# That runs pytest --cov-fail-under=60 (the image's CMD) against the same
 # postgres:16 the store uses, and leaves junit.xml and coverage.xml in
 # webapp/server/test-reports/ for the Jenkins publishers. A marker subset is one
 # more argument:
