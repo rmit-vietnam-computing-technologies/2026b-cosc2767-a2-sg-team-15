@@ -58,6 +58,8 @@ resource "aws_security_group" "jenkins_buildnode_sg" {
     to_port = 22
     protocol = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+    # Also explicitly allow SSH from the jenkins ctr node
+    security_groups = [aws_instance.public_jenkins.id]
   }
 
   egress {
