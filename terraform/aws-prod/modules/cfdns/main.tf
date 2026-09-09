@@ -28,3 +28,23 @@ resource "cloudflare_dns_record" "canary_frontend" {
   proxied = false
   comment = "COSC2767 Frontend ALB Canary"
 }
+
+resource "cloudflare_dns_record" "frontend_tls_validation" {
+  zone_id = var.cf_zone_id
+  name = var.frontend_prod_cname_record
+  type = "CNAME"
+  content = var.frontend_prod_cname_value
+  proxied = false
+  ttl = auto
+  comment = "COSC2767 Frontend TLS cert validation"
+}
+
+resource "cloudflare_dns_record" "frontend_canary_tls_validation" {
+  zone_id = var.cf_zone_id
+  name = var.frontend_canary_cname_record
+  type = "CNAME"
+  content = var.frontend_canary_cname_value
+  proxied = false
+  ttl = auto
+  comment = "COSC2767 Frontend Canary TLS cert validation"
+}
