@@ -32,7 +32,6 @@ resource "aws_s3_bucket_acl" "prod_acl" {
   acl = "public-read"
 }
 
-
 resource "aws_s3_bucket_acl" "canary_acl" {
   depends_on = [
     aws_s3_bucket_public_access_block.prod_public_unblock
