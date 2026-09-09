@@ -8,17 +8,17 @@ variable "cf_api_token" {
   type = string
 }
 
-variable "cf_account_id" {
+variable "account_id" {
   description = "The Cloudflare Account ID"
   type = string
 }
 
-variable "cf_domain" {
+variable "domain" {
   description = "The cloudflare domain to set DNS on"
   type = string
 }
 
-variable "cf_zone_id" {
+variable "zone_id" {
   description = "The cloudflare zoneid"
   type = string
 }
