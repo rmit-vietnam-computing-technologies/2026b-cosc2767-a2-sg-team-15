@@ -207,7 +207,7 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
-      "description": "METRIC: Number of currently active Prometheus alerts for the RMIT Store backend. Value 0 = no active alerts. Value 1 or greater = one or more alerts are currently active. The 'or vector(0)' ensures the panel displays 0 instead of No Data when there are no active alerts.",
+      "description": "METRIC: Number of currently active Prometheus alerts for the RMIT Store backend. Value 0 = no active alerts. Value 1 or greater = one or more alerts are currently active.",
       "fieldConfig": {
         "defaults": {
           "decimals": 0,

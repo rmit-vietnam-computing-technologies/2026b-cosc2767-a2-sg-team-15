@@ -1,0 +1,80 @@
+---
+- name: Setup Jenkins instance
+  hosts: jenkins_instance
+  become: true
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install nginx and required dependencies for Jenkins
+      apt:
+        pkg:
+          - openjdk-21-jdk
+          - fontconfig
+          - nginx
+          - gnupg
+          - git
+        state: present
+
+    - name: Download jenkins repo key
+      get_url:
+        url: https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key
+        dest: /etc/apt/keyrings/jenkins-keyring.asc
+
+    - name: Add jenkins apt repo
+      apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/"
+        state: present
+
+    - name: Install jenkins
+      apt:
+        pkg: jenkins
+        state: present
+
+    - name: Setup nginx site for jenkins
+      template:
+        src: jenkins-nginx.conf.j2
+        dest: /etc/nginx/sites-available/jenkins
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Remove default nginx site config
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: Enable jenkins nginx site
+      file:
+        src: /etc/nginx/sites-available/jenkins
+        dest: /etc/nginx/sites-enabled/jenkins
+        owner: root
+        group: root
+        mode: "0644"
+        state: link
+
+    - name: Check nginx configuration
+      command: nginx -t
+
+    - name: Enable and restart nginx
+      systemd:
+        name: nginx
+        state: restarted
+        enabled: true
+
+    - name: Enable and start jenkins
+      systemd:
+        name: jenkins
+        state: started
+        enabled: true
+
+    - name: Get the initial Jenkins admin password
+      slurp:
+        src: /var/lib/jenkins/secrets/initialAdminPassword
+      register: initial_password
+
+    - debug:
+        msg: "The initial Jenkins password is {{ initial_password['content'] | b64decode }}"

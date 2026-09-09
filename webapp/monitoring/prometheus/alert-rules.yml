@@ -10,7 +10,7 @@ groups:
           severity: critical
         annotations:
           summary: "RMIT Store backend is down"
-          description: "Prometheus has been unable to scrape the Django backend for more than 2 minutes."
+          description: "Prometheus unable to scrape the Django backend for more than 2 minutes."
 
       # 2. Too many HTTP 5xx responses
       - alert: HighHTTP5xxRate

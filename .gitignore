@@ -1,60 +1,113 @@
-# ---------------------------------------------------------------------------
-# Secrets and local configuration
-#
-# `.env` files hold credentials and are never committed. Working out how to
-# supply these values in a pipeline without checking them in is part of the
-# assignment — AWS Secrets Manager, SSM Parameter Store, Jenkins credentials,
-# Ansible Vault and Kubernetes Secrets are all reasonable answers.
-# ---------------------------------------------------------------------------
-.env
-.env.*
-!.env.example
+# =========================================================
+# COSC2767 .gitignore — safe submission version
+# =========================================================
 
-# --- Python ----------------------------------------------------------------
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-.venv/
-venv/
-env/
-*.egg-info/
-.eggs/
-dist/
-build/
-
-# Test and coverage output
-.pytest_cache/
-.coverage
-.coverage.*
-htmlcov/
-coverage.xml
-*.cover
-
-# --- Django ----------------------------------------------------------------
-*.log
-db.sqlite3
-db.sqlite3-journal
-
-# collectstatic output — generated at deploy time, never committed
-server/staticfiles/*
-!server/staticfiles/.gitkeep
-
-# Uploaded product images. In production these belong in S3, not on the
-# instance's disk (see USE_S3 in server/.env.example).
-server/media/
-
-# --- Node ------------------------------------------------------------------
-node_modules/
-client/dist/
-.npm
-*.tsbuildinfo
-
-# --- Editors and operating systems -----------------------------------------
+# ---------------------------------------------------------
+# OS generated files
+# ---------------------------------------------------------
 .DS_Store
 Thumbs.db
-.idea/
+desktop.ini
+
+# ---------------------------------------------------------
+# Editor / IDE files
+# ---------------------------------------------------------
 .vscode/
+.idea/
+*.iml
 *.swp
+*.swo
 *~
+.project
+.classpath
+.settings/
+
+# ---------------------------------------------------------
+# Environment files and credentials
+# ---------------------------------------------------------
+# Encrypted secret files may be committed only after encryption.
+!*.sops.yaml
+!*.sops.yml
+!*.enc
+
+# Private keys and certificates — always keep out of Git.
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+*.ppk
+
+# Local SSH/AWS/Kubernetes credentials — always keep out of Git.
+.ssh/
+.aws/
+.kube/
+kubeconfig
+*.kubeconfig
+
+# ---------------------------------------------------------
+# Ansible private files
+# ---------------------------------------------------------
+.vault_pass
+vault_pass.txt
+*.vault
+
+# ---------------------------------------------------------
+# Local caches and temporary files
+# ---------------------------------------------------------
+.cache/
+.tmp/
+*.tmp
+*.bak
+*.backup
+
+# Allow the specific rollback copies used by Question 7.
+!**/index.jsp.tmp
+!**/index.jsp.bak
+!**/index.jsp.backup
+
+# ---------------------------------------------------------
+# Language/tool caches
+# ---------------------------------------------------------
+__pycache__/
+*.pyc
+.venv/
+venv/
+node_modules/
+.m2/
+.gradle/
+
+# ---------------------------------------------------------
+# Local tool state
+# ---------------------------------------------------------
+.docker/
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+
+# ---------------------------------------------------------
+# Empty directories required by the exam
+# ---------------------------------------------------------
+# Git does not track empty directories. Add .gitkeep to any
+# required empty directory, e.g. my_project/bin/.gitkeep.
+!**/.gitkeep
+
+# ---------------------------------------------------------
+# Jenkins local state
+# ---------------------------------------------------------
+# Jenkins home can contain credentials, plugins, workspaces,
+# build history, and machine-specific state. Keep it ignored.
+# Permit only job configuration files intentionally submitted.
+.jenkins/*
+!.jenkins/jobs/
+.jenkins/jobs/**
+!.jenkins/jobs/**/
+!.jenkins/jobs/**/config.xml
+
+jenkins_home/*
+!jenkins_home/jobs/
+jenkins_home/jobs/**
+!jenkins_home/jobs/**/
+!jenkins_home/jobs/**/config.xml
