@@ -50,6 +50,9 @@ resource "aws_security_group" "jenkins_sg" {
 }
 
 resource "aws_security_group" "jenkins_buildnode_sg" {
+  name = "jenkins-buildnode-sg"
+  description = "Allow SSH traffic for build node config"
+  vpc_id = var.vpc_id
   # Only allow outbound internet access for downloading packages
   # And ssh for initial Ansible setup
   ingress {
@@ -59,7 +62,7 @@ resource "aws_security_group" "jenkins_buildnode_sg" {
     protocol = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
     # Also explicitly allow SSH from the jenkins ctr node
-    security_groups = [aws_instance.public_jenkins.id]
+    security_groups = [aws_security_group.jenkins_sg.id]
   }
 
   egress {
@@ -76,7 +79,7 @@ resource "aws_instance" "public_jenkins" {
   instance_type = "t3.micro"
   key_name = var.keypair_name
   subnet_id = var.vpc_public_subnet_id
-  vpc_security_group_ids = [aws_security_group.public_sg.id]
+  vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
 
   tags = {
     Name = "jenkins instance"
@@ -88,7 +91,7 @@ resource "aws_instance" "public_prometheus" {
   instance_type = "t3.micro"
   key_name = var.keypair_name
   subnet_id = var.vpc_public_subnet_id
-  vpc_security_group_ids = [aws_security_group.public_sg.id]
+  vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
 
   tags = {
     Name = "prometheus instance"
@@ -100,7 +103,7 @@ resource "aws_instance" "lim_public_jenkins_buildnode" {
   instance_type = "t3.micro"
   key_name = var.keypair_name
   subnet_id = var.vpc_public_subnet_id
-  vpc_security_group_ids = [aws_security_group.jenkins_buildnode_sg]
+  vpc_security_group_ids = [aws_security_group.jenkins_buildnode_sg.id]
 
   tags = {
     Name = "jenkins build node instance"

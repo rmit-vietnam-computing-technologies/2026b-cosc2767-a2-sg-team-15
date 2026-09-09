@@ -37,7 +37,7 @@
     - name: Setup nginx site for jenkins
       template:
         src: jenkins-nginx.conf.j2
-        dest: /etc/nginx/sites-available/jenkins
+        dest: /etc/nginx/sites-available/jenkins67.giabao06.dev
         owner: root
         group: root
         mode: "0644"
@@ -49,8 +49,8 @@
 
     - name: Enable jenkins nginx site
       file:
-        src: /etc/nginx/sites-available/jenkins
-        dest: /etc/nginx/sites-enabled/jenkins
+        src: /etc/nginx/sites-available/jenkins67.giabao06.dev
+        dest: /etc/nginx/sites-enabled/jenkins67.giabao06.dev
         owner: root
         group: root
         mode: "0644"
