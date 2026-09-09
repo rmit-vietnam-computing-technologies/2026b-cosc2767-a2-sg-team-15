@@ -5,6 +5,13 @@ resource "aws_s3_bucket" "prod_bucket" {
   }
 }
 
+resource "aws_s3_bucket" "canary_bucket" {
+  bucket = "canary-bucket"
+  tags = {
+    name = "FE canary bucket"
+  }
+}
+
 # Unblock public access
 
 resource "aws_s3_bucket_public_access_block" "prod_public_unblock" {
@@ -22,5 +29,15 @@ resource "aws_s3_bucket_acl" "prod_acl" {
   ]
 
   bucket = aws_s3_bucket.prod_bucket
+  acl = "public-read"
+}
+
+
+resource "aws_s3_bucket_acl" "canary_acl" {
+  depends_on = [
+    aws_s3_bucket_public_access_block.prod_public_unblock
+  ]
+
+  bucket = aws_s3_bucket.canary_bucket
   acl = "public-read"
 }
