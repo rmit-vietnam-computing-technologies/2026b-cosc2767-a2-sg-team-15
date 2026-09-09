@@ -27,3 +27,13 @@ output "jenkins_instance_public_ip" {
   description = "The public IP of the Jenkins instance"
   value = aws_instance.public_jenkins.public_ip
 }
+
+output "prometheus_instance_id" {
+  description = "the ID of the EC2 prometheus instance"
+  value = aws_instance.public_prometheus.id
+}
+
+output "prometheus_public_ip" {
+  description = "The public IP of the prometheus instance"
+  value = aws_instance.public_prometheus.id
+}

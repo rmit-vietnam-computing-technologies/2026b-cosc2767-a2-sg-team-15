@@ -83,6 +83,18 @@ resource "aws_instance" "public_jenkins" {
   }
 }
 
+resource "aws_instance" "public_prometheus" {
+  ami = data.aws_ami.debian.id
+  instance_type = "t3.micro"
+  key_name = var.keypair_name
+  subnet_id = var.vpc_public_subnet_id
+  vpc_security_group_ids = [aws_security_group.public_sg.id]
+
+  tags = {
+    Name = "prometheus instance"
+  }
+}
+
 resource "aws_instance" "lim_public_jenkins_buildnode" {
   ami = data.aws_ami.debian.id
   instance_type = "t3.micro"
@@ -97,5 +109,10 @@ resource "aws_instance" "lim_public_jenkins_buildnode" {
 
 resource "aws_eip" "jenkins_eip" {
   instance = aws_instance.public_jenkins.id
+  domain = "vpc"
+}
+
+resource "aws_eip" "prometheus_eip" {
+  instance = aws_instance.public_prometheus.id
   domain = "vpc"
 }
