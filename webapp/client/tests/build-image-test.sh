@@ -3,8 +3,8 @@
 
 set -e
 
-IMAGE_NAME=${1:-rmit-store-frontend}
-IMAGE_TAG=${2:-latest}
+IMAGE_NAME=${1:-test-image}
+IMAGE_TAG=${2:-v2}
 
 echo "Testing Docker build"
 
