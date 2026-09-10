@@ -42,6 +42,16 @@ pipeline {
             }
         }
 
+        stage('Test Docker Build') {
+            steps {
+                echo 'Temporary test(Also placeholder for now)'
+                dir('webapp/client') {
+                sh 'bash tests/build-image-test.sh ${DOCKER_IMAGE_NAME} ${DOCKER_TAG}'
+            }
+                echo 'Docker build test passed'
+            }
+        }   
+
         // Pushing to ECR
         stage('Push to ECR') {
             steps {
