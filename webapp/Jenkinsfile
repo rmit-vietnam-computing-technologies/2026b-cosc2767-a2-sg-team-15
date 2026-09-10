@@ -55,8 +55,8 @@ pipeline {
                             aws ecr get-login-password --region ${AWS_REGION} | \
                                 docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
                     
-                            docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ${ECR_URI}:${DOCKER_TAG}
-                            docker push ${ECR_URI}:${DOCKER_TAG}
+                            docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ${ECR_URI}:latest
+                            docker push ${ECR_URI}:latest
                         '''
                     }
                 }
