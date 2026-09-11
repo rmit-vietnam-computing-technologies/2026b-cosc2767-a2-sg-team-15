@@ -8,7 +8,7 @@ variable "prod_record" {
   type = string
 }
 
-variable "canary_record" {
-  description = "The DNS record for Canary"
+variable "api_record" {
+  description = "The DNS record for API server"
   type = string
 }

@@ -4,7 +4,7 @@ resource "aws_db_subnet_group" "main" {
 }
 
 resource "aws_db_instance" "prod" {
-  identifier = "prod_rds"
+  identifier = "rmitstore-prod"
   engine = "postgres"
   engine_version = "17"
   instance_class = "db.t3.micro"
@@ -16,21 +16,5 @@ resource "aws_db_instance" "prod" {
   publicly_accessible = false
   tags = {
     Name = "prod-rds"
-  }
-}
-
-resource "aws_db_instance" "canary" {
-  identifier = "canary_rds"
-  engine = "postgres"
-  engine_version = "17"
-  instance_class = "db.t3.micro"
-  allocated_storage = 20
-  skip_final_snapshot = true
-  username = var.rds_username
-  password = var.rds_password
-  multi_az = true
-  publicly_accessible = false
-  tags = {
-    Name = "canary-rds"
   }
 }
