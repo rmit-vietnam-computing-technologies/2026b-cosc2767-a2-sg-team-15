@@ -1,1 +1,7 @@
 keypair_name = "vockey"
+cf_api_token = "cfat_abcd...."
+account_id = ""
+domain = "example.com"
+zone_id = ""
+canary_name = "rmitstore-canary"
+prod_name = "rmitstore"
