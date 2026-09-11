@@ -38,10 +38,6 @@ module "rds" {
   subnet_ids = module.vpc.private_subnet_ids
 }
 
-module "s3" {
-  source = "./modules/s3"
-}
-
 module "ecr" {
   source = "./modules/ecr"
 }
