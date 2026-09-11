@@ -1,3 +1,2 @@
 ---
 - import_playbook: setup-jenkins.yml
-- import_playbook: setup-main.yml
