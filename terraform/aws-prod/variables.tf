@@ -23,8 +23,8 @@ variable "prod_name" {
   type = string
 }
 
-variable "canary_name" {
-  description = "The DNS name for canary"
+variable "api_name" {
+  description = "The DNS name for api"
   type = string
 }
 

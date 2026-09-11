@@ -7,10 +7,10 @@ resource "aws_acm_certificate" "web-prod" {
   }
 }
 
-resource "aws_acm_certificate" "web-canary" {
-  domain_name = "${var.canary_record}.${var.domain_name}"
+resource "aws_acm_certificate" "api-prod" {
+  domain_name = "${var.api_record}.${var.domain_name}"
   validation_method = "DNS"
   tags = {
-    Name = "frontend-canary-cert"
+    Name = "api-prod-cert"
   }
 }
