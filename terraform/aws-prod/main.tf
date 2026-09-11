@@ -38,8 +38,6 @@ module "tlscert" {
   canary_record = var.canary_name
 }
 
-
-
 resource "cloudflare_dns_record" "jenkins" {
   zone_id = var.zone_id
   # please do not the brainrot ehe~ the course code is COSC2767...
@@ -57,7 +55,7 @@ resource "cloudflare_dns_record" "prod_frontend" {
  type = "A"
  # Confirm ALB settings before continuing
  content = "127.0.0.1"
- ttl = auto
+ ttl = 1
  proxied = false
  comment = "COSC2767 Frontend ALB prod"
 }
@@ -68,27 +66,54 @@ resource "cloudflare_dns_record" "canary_frontend" {
  type = "A"
  # Confirm ALB settings before continuing
  content = "127.0.0.1"
- ttl = auto
+ ttl = 1
  proxied = false
  comment = "COSC2767 Frontend ALB Canary"
 }
 
 resource "cloudflare_dns_record" "frontend_tls_validation" {
+  for_each = {
+    for dvo in module.tlscert.prod_cname_opts : dvo.domain_name => {
+      name = dvo.resource_record_name
+      type = dvo.resource_record_type
+      content = dvo.resource_record_value
+    }
+  }
+
   zone_id = var.zone_id
-  name = module.tlscert.prod_cname_record
-  type = "CNAME"
-  content = module.tlscert.prod_cname_value
+  name = trimsuffix(each.value.name, ".")
+  type = each.value.type
+  content =  trimsuffix(each.value.content, ".")
   proxied = false
-  ttl = auto
+  ttl = 60
   comment = "COSC2767 Frontend TLS cert validation"
 }
 
 resource "cloudflare_dns_record" "frontend_canary_tls_validation" {
+  for_each = {
+    for dvo in module.tlscert.canary_cname_opts : dvo.domain_name => {
+      name = dvo.resource_record_name
+      type = dvo.resource_record_type
+      content = dvo.resource_record_value
+    }
+  }
+
   zone_id = var.zone_id
-  name = module.tlscert.canary_cname_record
-  type = "CNAME"
-  content = module.tlscert.canary_cname_value
+  name = trimsuffix(each.value.name, ".")
+  type = each.value.type
+  content =  trimsuffix(each.value.content, ".")
   proxied = false
-  ttl = auto
+  ttl = 60
   comment = "COSC2767 Frontend Canary TLS cert validation"
+}
+
+resource "aws_acm_certificate_validation" "prod_validation" {
+  certificate_arn = module.tlscert.prod_cert_arn
+  validation_record_fqdns = [for record in cloudflare_dns_record.frontend_tls_validation : record.name]
+}
+
+
+resource "aws_acm_certificate_validation" "canary_validation" {
+  certificate_arn = module.tlscert.canary_cert_arn
+  validation_record_fqdns = [for record in cloudflare_dns_record.frontend_canary_tls_validation : record.name]
 }
