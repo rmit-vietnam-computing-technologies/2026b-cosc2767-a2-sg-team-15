@@ -1,12 +1,12 @@
 resource "aws_s3_bucket" "prod_bucket" {
-  bucket = "prod-bucket"
+  bucket = "rmitstore-prod-bucket"
   tags = {
     name = "FE production bucket"
   }
 }
 
 resource "aws_s3_bucket" "canary_bucket" {
-  bucket = "canary-bucket"
+  bucket = "rmitstore-canary-bucket"
   tags = {
     name = "FE canary bucket"
   }
