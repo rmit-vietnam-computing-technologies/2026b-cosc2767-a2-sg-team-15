@@ -5,7 +5,7 @@ upstream jenkins_local {
 server {
     listen 80;
     listen [::]:80;
-    server_name jenkins67.giabao06.dev;
+    server_name {{ fqdn }};
 
     location / {
         proxy_pass http://jenkins_local;
