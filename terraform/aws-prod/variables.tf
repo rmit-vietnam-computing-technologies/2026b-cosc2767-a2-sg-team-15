@@ -32,3 +32,13 @@ variable "zone_id" {
   description = "The cloudflare zoneid"
   type = string
 }
+
+variable "db_username" {
+  description = "Database username to set"
+  type = string
+}
+
+variable "db_password" {
+  description = "Database password to set"
+  type = string
+}
