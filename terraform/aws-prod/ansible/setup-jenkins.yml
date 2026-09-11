@@ -2,6 +2,8 @@
 - name: Setup Jenkins instance
   hosts: jenkins_instance
   become: true
+  vars_files:
+    - vars/jenkins.yml
 
   tasks:
     - name: Update apt cache
@@ -17,6 +19,8 @@
           - nginx
           - gnupg
           - git
+          - certbot
+          - python3-certbot-nginx
         state: present
 
     - name: Download jenkins repo key
@@ -37,7 +41,7 @@
     - name: Setup nginx site for jenkins
       template:
         src: jenkins-nginx.conf.j2
-        dest: /etc/nginx/sites-available/jenkins67.giabao06.dev
+        dest: '/etc/nginx/sites-available/{{ fqdn }}'
         owner: root
         group: root
         mode: "0644"
@@ -59,6 +63,8 @@
     - name: Check nginx configuration
       command: nginx -t
 
+    - name: Provision let's encrypt certificate for nginx
+      command: 'certbot -d {{ fqdn }} --agree-tos -m {{ letsenc_email }}'
     - name: Enable and restart nginx
       systemd:
         name: nginx
