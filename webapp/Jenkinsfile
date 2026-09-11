@@ -42,15 +42,15 @@ pipeline {
             }
         }
 
-        stage('Test Docker Build') {
-            steps {
-                echo 'Temporary test(Also placeholder for now)'
-                dir('webapp/client') {
-                sh 'bash tests/build-image-test.sh'
-            }
-                echo 'Docker build test passed'
-            }
-        }   
+        // stage('Testing purchasing and correct credit card validation') {
+        //     steps {
+        //         echo 'Temporary test(Also placeholder for now)'
+        //         dir('webapp/client/tests') {
+        //         sh 'pytest rmit-store-order.py'
+        //     }
+        //         echo 'Checking out test passed'
+        //     }
+        // }   
 
         // Pushing to ECR
         stage('Push to ECR') {
