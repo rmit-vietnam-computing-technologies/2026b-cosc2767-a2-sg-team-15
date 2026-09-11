@@ -50,7 +50,7 @@ module "tlscert" {
   source = "./modules/tlscert"
   domain_name = var.domain
   prod_record = var.prod_name
-  canary_record = var.canary_name
+  api_record = var.api_name
 }
 
 resource "cloudflare_dns_record" "jenkins" {
@@ -76,7 +76,7 @@ resource "cloudflare_dns_record" "prometheus" {
 
 resource "cloudflare_dns_record" "prod_frontend" {
  zone_id = var.zone_id
- name = "aegleseeker"
+ name = var.prod_name
  type = "A"
  # Confirm ALB settings before continuing
  content = "127.0.0.1"
@@ -85,15 +85,15 @@ resource "cloudflare_dns_record" "prod_frontend" {
  comment = "COSC2767 Frontend ALB prod"
 }
 
-resource "cloudflare_dns_record" "canary_frontend" {
+resource "cloudflare_dns_record" "api_frontend" {
  zone_id = var.zone_id
- name = "bagelseeker"
+ name = var.api_name
  type = "A"
  # Confirm ALB settings before continuing
  content = "127.0.0.1"
  ttl = 1
  proxied = false
- comment = "COSC2767 Frontend ALB Canary"
+ comment = "COSC2767 API ALB"
 }
 
 resource "cloudflare_dns_record" "frontend_tls_validation" {
@@ -114,9 +114,9 @@ resource "cloudflare_dns_record" "frontend_tls_validation" {
   comment = "COSC2767 Frontend TLS cert validation"
 }
 
-resource "cloudflare_dns_record" "frontend_canary_tls_validation" {
+resource "cloudflare_dns_record" "api_tls_validation" {
   for_each = {
-    for dvo in module.tlscert.canary_cname_opts : dvo.domain_name => {
+    for dvo in module.tlscert.api_cname_opts : dvo.domain_name => {
       name = dvo.resource_record_name
       type = dvo.resource_record_type
       content = dvo.resource_record_value
@@ -129,7 +129,7 @@ resource "cloudflare_dns_record" "frontend_canary_tls_validation" {
   content =  trimsuffix(each.value.content, ".")
   proxied = false
   ttl = 60
-  comment = "COSC2767 Frontend Canary TLS cert validation"
+  comment = "COSC2767 api TLS cert validation"
 }
 
 resource "aws_acm_certificate_validation" "prod_validation" {
@@ -138,7 +138,7 @@ resource "aws_acm_certificate_validation" "prod_validation" {
 }
 
 
-resource "aws_acm_certificate_validation" "canary_validation" {
-  certificate_arn = module.tlscert.canary_cert_arn
-  validation_record_fqdns = [for record in cloudflare_dns_record.frontend_canary_tls_validation : record.name]
+resource "aws_acm_certificate_validation" "api_validation" {
+  certificate_arn = module.tlscert.api_cert_arn
+  validation_record_fqdns = [for record in cloudflare_dns_record.api_tls_validation : record.name]
 }
