@@ -25,7 +25,7 @@ output "build_node_public_ip" {
 
 output "jenkins_instance_public_ip" {
   description = "The public IP of the Jenkins instance"
-  value = aws_instance.public_jenkins.public_ip
+  value = aws_eip.jenkins_eip.public_ip
 }
 
 output "prometheus_instance_id" {
@@ -35,5 +35,5 @@ output "prometheus_instance_id" {
 
 output "prometheus_public_ip" {
   description = "The public IP of the prometheus instance"
-  value = aws_instance.public_prometheus.id
+  value = aws_eip.prometheus_eip.public_ip
 }
