@@ -18,6 +18,16 @@ variable "domain" {
   type = string
 }
 
+variable "prod_name" {
+  description = "The DNs name for prod"
+  type = string
+}
+
+variable "canary_name" {
+  description = "The DNS name for canary"
+  type = string
+}
+
 variable "zone_id" {
   description = "The cloudflare zoneid"
   type = string
