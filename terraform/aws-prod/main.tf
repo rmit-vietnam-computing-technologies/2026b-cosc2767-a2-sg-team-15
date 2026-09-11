@@ -31,6 +31,21 @@ module "ec2" {
   vpc_public_subnet_id = module.vpc.public_subnet_id[0]
 }
 
+module "rds" {
+  source = "./modules/rds"
+  rds_username = var.db_username
+  rds_password = var.db_password
+  subnet_ids = module.vpc.private_subnet_ids
+}
+
+module "s3" {
+  source = "./modules/s3"
+}
+
+module "ecr" {
+  source = "./modules/ecr"
+}
+
 module "tlscert" {
   source = "./modules/tlscert"
   domain_name = var.domain
@@ -47,6 +62,16 @@ resource "cloudflare_dns_record" "jenkins" {
   ttl = 1
   proxied = false
   comment = "COSC2767 Jenkins Instance"
+}
+
+resource "cloudflare_dns_record" "prometheus" {
+  zone_id = var.zone_id
+  name = "prometheus67"
+  type = "A"
+  content = module.ec2.prometheus_public_ip
+  ttl = 1
+  proxied = false
+  comment = "COSC2767 Prometheus Instance"
 }
 
 resource "cloudflare_dns_record" "prod_frontend" {
