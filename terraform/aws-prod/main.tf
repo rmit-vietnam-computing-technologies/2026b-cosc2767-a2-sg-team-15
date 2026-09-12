@@ -31,13 +31,6 @@ module "ec2" {
   vpc_public_subnet_id = module.vpc.public_subnet_id[0]
 }
 
-module "rds" {
-  source = "./modules/rds"
-  rds_username = var.db_username
-  rds_password = var.db_password
-  subnet_ids = module.vpc.private_subnet_ids
-}
-
 module "ecr" {
   source = "./modules/ecr"
 }
@@ -52,7 +45,7 @@ module "tlscert" {
 resource "cloudflare_dns_record" "jenkins" {
   zone_id = var.zone_id
   # please do not the brainrot ehe~ the course code is COSC2767...
-  name = "jenkins67"
+  name = var.jenkins_name
   type = "A"
   content = module.ec2.jenkins_instance_public_ip
   ttl = 1
@@ -62,7 +55,7 @@ resource "cloudflare_dns_record" "jenkins" {
 
 resource "cloudflare_dns_record" "prometheus" {
   zone_id = var.zone_id
-  name = "prometheus67"
+  name = var.prometheus_name
   type = "A"
   content = module.ec2.prometheus_public_ip
   ttl = 1
@@ -137,4 +130,11 @@ resource "aws_acm_certificate_validation" "prod_validation" {
 resource "aws_acm_certificate_validation" "api_validation" {
   certificate_arn = module.tlscert.api_cert_arn
   validation_record_fqdns = [for record in cloudflare_dns_record.api_tls_validation : record.name]
+}
+
+module "rds" {
+  source = "./modules/rds"
+  rds_username = var.db_username
+  rds_password = var.db_password
+  subnet_ids = module.vpc.private_subnet_ids
 }
