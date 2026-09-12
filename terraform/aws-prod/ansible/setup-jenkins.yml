@@ -2,8 +2,6 @@
 - name: Setup Jenkins instance
   hosts: jenkins_instance
   become: true
-  vars_files:
-    - vars/jenkins.yml
 
   tasks:
     - name: Update apt cache

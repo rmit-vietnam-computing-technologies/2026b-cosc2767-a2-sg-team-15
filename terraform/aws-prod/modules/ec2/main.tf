@@ -12,6 +12,10 @@ data "aws_ami" "debian" {
     owners = ["136693071363"]
 }
 
+data "aws_iam_role" "LabInstanceProfile" {
+  name = "LabRole"
+}
+
 resource "aws_security_group" "jenkins_sg" {
   name = "jenkins-sg"
   description = "Allow web and SSH traffic"
@@ -80,7 +84,7 @@ resource "aws_instance" "public_jenkins" {
   key_name = var.keypair_name
   subnet_id = var.vpc_public_subnet_id
   vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
-
+  iam_instance_profile = data.aws_iam_role.LabInstanceProfile.name
   tags = {
     Name = "jenkins instance"
   }
@@ -104,7 +108,7 @@ resource "aws_instance" "lim_public_jenkins_buildnode" {
   key_name = var.keypair_name
   subnet_id = var.vpc_public_subnet_id
   vpc_security_group_ids = [aws_security_group.jenkins_buildnode_sg.id]
-
+  iam_instance_profile = data.aws_iam_role.LabInstanceProfile.name
   tags = {
     Name = "jenkins build node instance"
   }
