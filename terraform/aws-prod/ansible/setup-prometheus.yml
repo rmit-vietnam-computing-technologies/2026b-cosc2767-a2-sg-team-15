@@ -37,7 +37,7 @@
         repo: "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
         state: present
 
-    - name: Install docker, nodejs and python3 plus venv
+    - name: Install docker, python3 docker sdk, and nginx
       apt:
         pkg:
           - docker-ce
@@ -45,7 +45,9 @@
           - containerd.io
           - docker-buildx-plugin
           - docker-compose-plugin
-          - docker-compoes
+          - docker-compose
+          - python3-docker
+          - nginx
         state: present
 
     - name: Enable and start Docker
@@ -60,5 +62,34 @@
         groups: docker
         append: true
 
-    # Add steps to install the prometheus/grafana container itself
-    # And configure nginx reverse proxy (I will handle TLS setup)
+    - name: Copy prometheus config to server
+      # step...
+
+    - name: Pull Prometheus docker image
+      # step...
+
+    - name: Start Prometheus container
+      # step...
+
+    - name: Setup nginx site for Prometheus
+      # bao step...
+
+    - name: Remove default nginx site config
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: Enable prometheus nginx site
+      # bao step...
+
+    - name: Check nginx configuration
+      command: nginx -t
+
+    - name: Provision let's encrypt certificate for nginx
+      command: 'certbot -d {{ fqdn }} --agree-tos -m {{ letsenc_email }}'
+
+    - name: Enable and restart nginx
+      systemd:
+        name: nginx
+        state: restarted
+        enabled: true
