@@ -96,7 +96,7 @@ services:
     build: *api-build
     environment:
       <<: *api-environment
-      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-3}
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-1}
     volumes:
       # Uploads, shared with web. One host only; S3 beyond that.
       - media:/app/media
@@ -108,7 +108,7 @@ services:
     # Readiness, overriding the image's liveness check:
     # web must not be pointed at an api whose database is not up.
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/readyz/', timeout=3)"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1/readyz/', timeout=3)"]
       interval: 10s
       timeout: 5s
       retries: 6
@@ -126,7 +126,7 @@ services:
     build:
       context: ./webapp/client
     environment:
-      API_UPSTREAM: api:8000
+      API_UPSTREAM: api:80
     ports:
       - "${WEB_PORT:-80}:80"
     volumes:
