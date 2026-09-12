@@ -30,6 +30,8 @@ urlpatterns = [
     # --- probes ---
     path("healthz/", HealthzView.as_view(), name="healthz"),
     path("readyz/", ReadyzView.as_view(), name="readyz"),
+    # ---monitor---
+    path("", include("django_prometheus.urls")),
     # --- api ---
     path("api/", include("apps.core.urls")),
     path("api/auth/", include("apps.accounts.urls_auth")),
