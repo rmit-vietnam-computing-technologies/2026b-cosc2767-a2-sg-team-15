@@ -3,6 +3,11 @@ variable "keypair_name" {
   type = string
 }
 
+variable "private_key_path" {
+  description = "Path to ssh private key of the keypair"
+  type = string
+}
+
 variable "cf_api_token" {
   description = "The Cloudflare API token"
   type = string
@@ -23,6 +28,16 @@ variable "prod_name" {
   type = string
 }
 
+variable "jenkins_name" {
+  description = "The DNs name for jenkins"
+  type = string
+}
+
+variable "prometheus_name" {
+  description = "The DNs name for prometheus"
+  type = string
+}
+
 variable "api_name" {
   description = "The DNS name for api"
   type = string
@@ -40,5 +55,10 @@ variable "db_username" {
 
 variable "db_password" {
   description = "Database password to set"
+  type = string
+}
+
+variable "letsenc_email" {
+  description = "Let's encrypt email"
   type = string
 }
