@@ -5,7 +5,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 07/09/2026
-# Last modified: 13/09/2026
+# Last modified: 14/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic) in a guided session; the
 #   author built, ran and verified the image. References: Dockerfile reference,
 #   https://docs.docker.com/reference/dockerfile/; multi-stage builds,
@@ -98,7 +98,7 @@ ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 
 # --- test ------------------------------------------------------------------
-# Built from runtime so CI tests the bytes that deploy. 
+# Built from runtime so CI tests the bytes that deploy. Never pushed.
 FROM runtime AS test
 
 USER root

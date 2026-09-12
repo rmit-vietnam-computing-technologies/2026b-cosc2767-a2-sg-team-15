@@ -5,7 +5,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 13/09/2026
-# Last modified: 13/09/2026
+# Last modified: 14/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic); the author applied and
 #   verified it. Provider pin matches terraform/aws-individual. Reference:
 #   Terraform AWS provider docs, https://registry.terraform.io/providers/hashicorp/aws/latest/docs
@@ -17,6 +17,10 @@ terraform {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 6.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
     }
   }
 }

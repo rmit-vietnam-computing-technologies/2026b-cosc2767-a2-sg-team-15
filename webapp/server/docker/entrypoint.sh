@@ -6,7 +6,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 13/09/2026
-# Last modified: 13/09/2026
+# Last modified: 14/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic); the author built, ran and
 #   verified it. References: gunicorn settings,
 #   https://docs.gunicorn.org/en/stable/settings.html; bash wait -n,
@@ -41,10 +41,16 @@ stop() {
     kill -TERM "$GUNICORN" 2>/dev/null || true
     kill -QUIT "$NGINX" 2>/dev/null || true
 }
-trap stop TERM INT
+
+# A stop we were asked for (rollout, scale-down) is a clean exit. A child
+# dying on its own is not, so the orchestrator restarts the container.
+STOPPING=0
+on_signal() { STOPPING=1; stop; }
+trap on_signal TERM INT
 
 CODE=0
 wait -n || CODE=$?
 stop
 wait
+[ "$STOPPING" = 1 ] && exit 0
 exit "$CODE"

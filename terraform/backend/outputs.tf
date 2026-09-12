@@ -5,11 +5,12 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 13/09/2026
-# Last modified: 13/09/2026
+# Last modified: 14/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic); the author applied and
 #   verified it. Reference: Terraform output values,
 #   https://developer.hashicorp.com/terraform/language/values/outputs
 
+# What Ansible, the deploy script and the smoke suite need from this stack.
 
 output "node_public_ip" {
   description = "Elastic IP of the k3s node. SSH, kubectl, and the API URLs."
@@ -46,4 +47,9 @@ output "database_url_prod" {
   description = "DATABASE_URL for the prod namespace. The database itself is created from the node."
   value       = "postgres://${var.db_username}:${var.db_password}@${aws_db_instance.db.address}:5432/rmit_prod"
   sensitive   = true
+}
+
+output "ssm_parameter_paths" {
+  description = "Where deploy.sh reads each environment's secrets from."
+  value       = { for env in var.environments : env => "/${var.name_prefix}/${env}" }
 }

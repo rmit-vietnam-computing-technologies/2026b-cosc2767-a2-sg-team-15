@@ -6,7 +6,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 13/09/2026
-# Last modified: 13/09/2026
+# Last modified: 14/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic); the author ran and
 #   verified it on k3s. References: kubectl create secret,
 #   https://kubernetes.io/docs/reference/kubectl/generated/kubectl_create/kubectl_create_secret_docker-registry/;
@@ -17,7 +17,8 @@
 #
 #     ECR_REPO=... KUBECONFIG=... deploy/bin/deploy.sh <staging|prod> <tag>
 #
-# Secrets come from deploy/k8s/<env>.secret.env, or SECRET_FILE if set.
+# Secrets come from SSM Parameter Store (/rmit-store/<env>/*), or from a
+# file if SECRET_FILE is set.
 
 set -euo pipefail
 ENV=${1:?usage: deploy.sh <staging|prod> <tag>}
@@ -29,8 +30,9 @@ cd "$(dirname "$0")/../.."
 K8S=deploy/k8s
 NS=$ENV
 IMAGE="$ECR_REPO:$TAG"
-SECRET_FILE=${SECRET_FILE:-$K8S/$ENV.secret.env}
-[ -f "$SECRET_FILE" ] || { echo "missing $SECRET_FILE (copy the .example)"; exit 1; }
+. deploy/bin/lib.sh
+SECRETS=$(mktemp); trap 'rm -f "$SECRETS"' EXIT
+secret_env_file "$ENV" "$SECRETS"
 
 kubectl get namespace "$NS" >/dev/null 2>&1 || kubectl create namespace "$NS"
 
@@ -42,7 +44,7 @@ kubectl -n "$NS" create secret docker-registry ecr-pull \
 
 kubectl -n "$NS" create configmap api-config --from-env-file="$K8S/$ENV.config.env" \
   --dry-run=client -o yaml | kubectl apply -f -
-kubectl -n "$NS" create secret generic api-secret --from-env-file="$SECRET_FILE" \
+kubectl -n "$NS" create secret generic api-secret --from-env-file="$SECRETS" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 # Schema first, exactly once, with the image about to serve.

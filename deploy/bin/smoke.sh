@@ -6,7 +6,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 13/09/2026
-# Last modified: 13/09/2026
+# Last modified: 14/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic); the author ran and
 #   verified it. Reference: pytest -m,
 #   https://docs.pytest.org/en/stable/example/markers.html
@@ -22,10 +22,12 @@ TAG=${2:?usage: smoke.sh <staging|prod> <tag>}
 cd "$(dirname "$0")/../.."
 
 K8S=deploy/k8s
-SECRET_FILE=${SECRET_FILE:-$K8S/$ENV.secret.env}
+. deploy/bin/lib.sh
+SECRETS=$(mktemp); trap 'rm -f "$SECRETS"' EXIT
+secret_env_file "$ENV" "$SECRETS"
 BASE_URL=$(grep '^SMOKE_BASE_URL=' "$K8S/$ENV.config.env" | cut -d= -f2-)
-MEMBER_EMAIL=$(grep '^SEED_ADMIN_EMAIL=' "$SECRET_FILE" | cut -d= -f2-)
-MEMBER_PASSWORD=$(grep '^SEED_ADMIN_PASSWORD=' "$SECRET_FILE" | cut -d= -f2-)
+MEMBER_EMAIL=$(grep '^SEED_ADMIN_EMAIL=' "$SECRETS" | cut -d= -f2-)
+MEMBER_PASSWORD=$(grep '^SEED_ADMIN_PASSWORD=' "$SECRETS" | cut -d= -f2-)
 
 mkdir -p webapp/server/test-reports
 docker run --rm \
