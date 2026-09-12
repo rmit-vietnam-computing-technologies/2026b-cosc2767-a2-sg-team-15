@@ -1,0 +1,47 @@
+---
+- name: Setup Monitoring instance
+  hosts: monitoring_instance
+  become: true
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install docker and dependencies
+      apt:
+        pkg:
+          - docker.io
+          - docker-compose
+        state: present
+
+    - name: Enable and start Docker
+      systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Add ubuntu user to docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: true
+    
+    - name: Checking docker service status
+      command: systemctl is-active docker
+      register: docker_status
+      changed_when: false
+
+    - name: Display docker status
+      debug:
+        msg: "Docker service status: {{ docker_status.stdout}}"
+    
+    - name: Checking docker service status
+      command: docker-compose --version
+      register: docker_compose_version
+      changed_when: false
+    
+    - name: Display docker-compose version
+      debug:
+        msg: "Docker compose: {{ docker_compose_version.stdout}}"
