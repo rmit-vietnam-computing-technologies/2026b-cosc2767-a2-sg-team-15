@@ -16,7 +16,7 @@
 bucket_suffix = "t15-260913"
 
 # RDS master password. Letters and digits only, 8 to 41 chars, no @ / " or space.
-db_password = "REPLACE_WITH_DATABASE_PASSWORD"
+db_password = "NIPshC6MXZzDUKkmWgEtXKXf"
 
 # Learner Lab key pair. labsuser.pem is its private half.
 keypair_name = "vockey"

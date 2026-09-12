@@ -1,0 +1,15 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Vo Hoang Khanh
+# ID: s3926310
+# Created  date: 03/09/2026
+# Last modified: 13/09/2026
+# Acknowledgement: Kept next to the files it protects.
+
+inventory.ini
+group_vars/all.yml
+k3s.kubeconfig
+
+*.retry

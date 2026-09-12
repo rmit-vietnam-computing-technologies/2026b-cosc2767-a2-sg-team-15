@@ -25,6 +25,12 @@ variable "name_prefix" {
 variable "bucket_suffix" {
   description = "Bucket names are global; pick something unique like t15-260913."
   type        = string
+
+  # S3 rejects uppercase and underscores, and the placeholder has both.
+  validation {
+    condition     = can(regex("^[a-z0-9][a-z0-9-]{1,30}$", var.bucket_suffix))
+    error_message = "bucket_suffix must be lowercase letters, digits and hyphens, e.g. t15-260913."
+  }
 }
 
 variable "environments" {
@@ -81,4 +87,10 @@ variable "db_password" {
   description = "RDS master password. Comes from terraform.tfvars or TF_VAR_db_password, never from git."
   type        = string
   sensitive   = true
+
+  # RDS forbids / @ " and space; the placeholder must never reach an apply.
+  validation {
+    condition     = length(var.db_password) >= 8 && length(var.db_password) <= 41 && !can(regex("[/@\" ]|REPLACE", var.db_password))
+    error_message = "db_password must be 8 to 41 chars, no / @ \" or space, and not the placeholder."
+  }
 }
