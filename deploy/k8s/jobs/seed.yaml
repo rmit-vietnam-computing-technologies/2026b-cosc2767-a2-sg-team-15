@@ -5,13 +5,14 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 13/09/2026
-# Last modified: 13/09/2026
+# Last modified: 14/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic); the author applied and
 #   verified it on k3s. Reference: Jobs,
 #   https://kubernetes.io/docs/concepts/workloads/controllers/job/
 
-# Demo catalogue plus demo accounts. Idempotent upstream, so re-running is safe.
-# The admin credentials come from the Secret; $(VAR) is expanded by Kubernetes.
+# Demo catalogue plus demo accounts. create_admin runs first because it
+# updates the password of an existing account and seed_demo does not, so the
+# admin always matches what SSM holds. Safe to re-run.
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -32,15 +33,12 @@ spec:
         - name: seed
           image: IMAGE_PLACEHOLDER
           imagePullPolicy: IfNotPresent
+          command: ["bash", "-c"]
           args:
-            - python
-            - manage.py
-            - seed_demo
-            - --demo-users
-            - --admin-email
-            - $(SEED_ADMIN_EMAIL)
-            - --admin-password
-            - $(SEED_ADMIN_PASSWORD)
+            - |
+              set -e
+              python manage.py create_admin --email "$SEED_ADMIN_EMAIL" --password "$SEED_ADMIN_PASSWORD"
+              python manage.py seed_demo --demo-users --admin-email "$SEED_ADMIN_EMAIL" --admin-password "$SEED_ADMIN_PASSWORD"
           envFrom:
             - configMapRef:
                 name: api-config
