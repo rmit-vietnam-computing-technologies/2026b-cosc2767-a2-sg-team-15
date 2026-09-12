@@ -1,0 +1,108 @@
+---
+- name: Setup Jenkins Build Node
+  hosts: jenkins_buildnode
+  become: true
+
+- tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install required dependencies
+      apt:
+        pkg:
+          - openjdk-21-jdk
+          - fontconfig
+          - gnupg
+          - git
+          - curl
+          - ca-certificates
+        state: present
+
+      # Did have to ask Claude for this
+    - name: Expand /tmp so Jenkins won't complain
+      mount:
+        path: /tmp
+        src: tmpfs
+        fstype: tmpfs
+        opts: "defaults, size=3G, mode=1777"
+        state: mounted
+
+    # Adapted from Docker guide: https://docs.docker.com/engine/install/debian/
+    - name: Create apt keyring dir
+      file:
+        path: /etc/apt/keyrings/
+        state: directory
+        mode: '0755'
+
+    - name: Download Docker repo key
+      get_url:
+        url: https://download.docker.com/linux/debian/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        # sudo chmod a+r /etc/apt/keyrings/docker.asc
+        mode: '0644'
+
+    - name: Add docker apt repo
+      apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    # https://github.com/cyberowl-town/akvns.org/blob/main/terraform/aws/ansible/playbook.yml (thanks Swyrin)
+    - name: Setup NodeSource repo for Node.js 24
+      shell: |
+          curl -fsSL https://deb.nodesource.com/setup_24.x | bash -
+      args:
+        creates: /etc/apt/sources.list.d/nodesource.list
+
+    - name: Install docker, nodejs and python3 plus venv
+      apt:
+        pkg:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+          - nodejs
+          - python3
+          - python3-venv
+        state: present
+
+    - name: Create jenkins-builder user
+      user:
+        name: jenkins-builder
+        create_home: yes
+        # Add users to other groups, not "only add users to the groups specified"
+        append: true
+        # Allow docker access for jenkins-builder
+        groups: docker
+
+    - name: Download the jenkins buildnode jar from jenkins host
+      get_url:
+        url: http://{{ jenkins_host }}/jnlpJars/agent.jar
+        dest: /home/jenkins-builder/agent.jar
+        become: true
+        become_user: jenkins-builder
+
+    - name: Create secrets file
+      copy:
+        content: "{{ jenkins_secret }}"
+        dest: /home/jenkins-builder/jenkins_secret
+        mode: '0600'
+        become: true
+        become_user: jenkins-builder
+
+    - name: Install Jenkins build node systemd service
+      template:
+        src: node-service.service.j2
+        target: /usr/share/systemd/system/jenkins-node.service
+        owner: root
+        group: rood
+        mode: '0644'
+
+    - name: Enable jenkins agent service
+      systemd:
+        name: jenkins-node.service
+        daemon_reload: true
+        enabled: true
+        state: started
