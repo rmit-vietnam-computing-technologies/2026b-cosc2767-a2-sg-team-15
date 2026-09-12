@@ -6,93 +6,72 @@ Assessment: Assignment 2
 Author: Vo Hoang Khanh
 ID: s3926310
 Created  date: 08/09/2026
-Last modified: 09/09/2026
-Acknowledgement: Written with help from Claude (Anthropic). I ran every
-  command in here and checked every number myself. Scope comes straight
-  from Core Requirement 5 of the brief.
+Last modified: 13/09/2026
+Acknowledgement: Written with help from Claude (Anthropic). Every command
+  here was run and every number checked by the author.
 -->
 
-# Backend tests: what's here and why
+# Backend tests
+
+Twelve tests. Money and stock first, because that is where a bug costs the
+store something.
 
 ## Scope
 
-Short version: Core Requirement 5 of the brief has a list of the tests it
-wants for this app. That list is the spec. Every suite below exists because
-a line in that list asks for it, and I didn't test anything the brief
-doesn't mention. That's the boundary.
+| Suite | Test | Boundary or property pinned |
+|---|---|---|
+| unit | money rounds half up at the cent | 10.005 up, 10.004 down, 2.675 up, two places kept |
+| unit | tax only on taxable lines, rounded | 44.95 at 5% is 2.25 (the README's example), 0.10 gives 0.01, 0.09 gives 0.00, non-taxable is 0.00 |
+| unit | Luhn at the length and checksum edges | 12 and 19 digits pass, 11 and 20 fail, one digit off fails, spaces ignored |
+| unit | card valid to the end of its month | this month passes, last month fails, later month of an earlier year fails |
+| integration | prices from the database, stock once | request lies about every price; subtotal 72.90, tax 2.25, total 75.15, both stocks down by one |
+| integration | declined card | 402, no order row, stock unchanged, no email |
+| integration | quantity vs stock | equal to stock passes and leaves 0, one over is 400 and stock untouched |
+| integration | duplicate lines | two lines for one product become one line, stock taken once for the sum |
+| integration | card number never kept | response and order row hold brand and last4 only |
+| integration | line items snapshot | rename and reprice after purchase, the order still shows the original |
+| smoke | probes and version | healthz 200, readyz 200 with database and storage ok, commit equals what was shipped |
+| smoke | declined card post-deploy | full write path exercised, 402, nothing left behind |
 
-| Brief asks for | File | Functions | Cases |
-|---|---|---:|---:|
-| *Unit: the payment gateway logic in isolation (card validation, brand detection, expiry, decline codes)* | `unit/test_payments.py` | 26 | 99 |
-| *Unit: server-side tax and total calculation* | `unit/test_money.py` | 9 | 31 |
-| *Integration: the shop endpoint returns products, proving the API-to-database connection* | `integration/test_catalog_api.py` | 15 | 15 |
-| *Integration: placing an order decrements stock and computes the total server-side; a declined card leaves no order behind and takes no stock* | `integration/test_checkout.py` | 18 | 20 |
-| *Integration: authorisation holds, so anonymous / member / seller / admin get the status codes they should* | `integration/test_authorisation.py` | 10 | 47 |
-| *Test the basic failure modes: misconfiguration that only shows up when deployed (wrong ALLOWED_HOSTS etc), health and version endpoints* | `integration/test_configuration.py` | 20 | 20 |
-| *Smoke: /healthz/ and /readyz/ return healthy, /api/version/ reports the build you just deployed; missing static files; wrong API URL* | `smoke/test_deployment.py`, `smoke/test_spa.py` | 23 | 23 |
-| | **Total** | **121** | **255** |
+Boundary values sit in a table inside each test, so one test is one Jenkins
+row and every edge is still covered.
 
-"Cases" is what Jenkins counts. A parametrised function reports once per
-parameter set, so `test_payments` is 26 functions run over the brief's card
-table, and the auth matrix is literally one function run over 9 endpoints x
-4 roles (36 of that file's 47 cases). Nobody sat down and wrote 255 tests.
+### Not here, on purpose
 
-### Deliberately not tested
+- Frontend unit tests and browser journeys: frontend workstream.
+- Authorisation matrix, catalogue listing, config boot guards: real behaviour,
+  cut to keep the suite small. The prod settings still refuse to boot without a
+  real SECRET_KEY, that just isn't asserted here any more.
+- Seeding and admin creation: management commands, proven by deploying.
 
-- **Frontend unit tests and the Web UI / e2e journeys.** Frontend
-  workstream's job, not this folder's.
-- **Order cancellation, restocking, review moderation, wishlist.** Real app
-  behaviour, but the brief doesn't name it and the pipeline doesn't depend
-  on it. I had tests for these and pulled them to keep things scoped. The
-  coverage ratchet went from 65 to 60 because of that.
-- **Every endpoint.** The auth matrix does one endpoint per permission class
-  (public, logged in, admin only, seller surface, and the one admin-only
-  action inside the seller surface). Routes that share a permission class
-  are one equivalence partition, so testing one of them covers the class.
-  Whether each viewset is wired to the right class gets covered by the
-  scoping tests in the same file and by the feature suites.
-- **App correctness beyond the above.** The pipeline is the deliverable. If
-  I hit an upstream bug it goes in the report under Known Bugs, not a fix here.
+## Running
 
-## Running it
+From `webapp/server/` with the venv active and Postgres on `DATABASE_URL`
+(SQLite cannot run `select_for_update`), or from the repo root inside the API
+image, which is what CI does:
 
-Everything assumes you're in `webapp/server/` with the venv active and a
-PostgreSQL reachable at `DATABASE_URL`. SQLite won't work, the order code
-uses `select_for_update`. Or skip all that and run it inside the API image,
-which is what CI does: `docker compose -f compose.yaml -f compose.ci.yaml run --rm test`
-from the repo root.
-
-| Command | What runs |
+| Command | Runs |
 |---|---|
-| `pytest` | unit + integration, coverage written to `test-reports/` |
-| `pytest -m unit` | the 130 pure-function cases, no database, under a second |
-| `pytest -m integration` | the 102 API + database cases |
-| `pytest --cov-fail-under=60` | what CI runs: everything plus the coverage gate |
-| `SMOKE_BASE_URL=http://<host> pytest -m smoke --no-cov` | the 23 deployment checks against a live URL |
+| `pytest` | unit + integration, 10 tests, reports in `test-reports/` |
+| `pytest -m unit` | the 4 pure-function tests |
+| `SMOKE_BASE_URL=http://<host> pytest -m smoke --no-cov` | the 2 deployment checks |
+| `docker compose -f compose.yaml -f compose.ci.yaml run --rm test` | the CI run |
 
-Smoke is off by default (`-m "not smoke"` in `pytest.ini`) because it needs
-something deployed. No `SMOKE_BASE_URL` and it skips; set it with nothing
-listening and it waits up to 60s for `/healthz/` then fails once.
+Set `SMOKE_EXPECTED_COMMIT` to make the version check strict, and
+`SMOKE_MEMBER_EMAIL` / `SMOKE_MEMBER_PASSWORD` to enable the declined-card
+check (it skips without them).
 
 ## Coverage
 
-Measured over `apps/` only (`.coveragerc`), so test code, migrations and
-settings don't count. The gate is 60% and it's on the CI command line rather
-than in `pytest.ini`, so running a marker subset locally doesn't go red.
-
-The number I'd actually defend isn't the total. It's that
-`orders/payments.py` is at 100% and `core/permissions.py` at 85%, which are
-the bits where a bug costs money or leaks data. The total is dragged down by
-management commands (you exercise those by deploying, not by tests) and by
-the stuff I listed as out of scope.
+Reported, not gated. `orders/payments.py` and `orders/services.create_order`
+are the lines that matter and they are covered; the total is low because most
+of the app is out of scope here.
 
 ## When it goes red
 
 | Symptom | Probably |
 |---|---|
-| `ModuleNotFoundError: rest_framework` | venv not active |
-| `inifile: None` | you're not in `webapp/server/` |
-| `connection refused` on 5432 | Postgres isn't running |
-| coverage lower than expected | a marker subset ran last, rerun plain `pytest` |
+| `inifile: None` | not in `webapp/server/` |
+| `connection refused` on 5432 | Postgres not running |
+| `Permission denied: test-reports/junit.xml` | the folder was created by root, `sudo chown -R $(id -u) webapp/server/test-reports` |
 | smoke: `did not answer /healthz/` | nothing deployed at `SMOKE_BASE_URL` |
-| smoke: admin 500 but static 200 | `collectstatic` ran under a different settings module than the server |

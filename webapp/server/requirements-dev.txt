@@ -5,31 +5,17 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 02/09/2026
-# Last modified: 09/09/2026
-# Acknowledgement: Drafted with Claude (Anthropic) in a guided session; the
-#   author reviewed, installed and verified every dependency. References:
-#   pytest documentation, https://docs.pytest.org/
-#   pytest-django documentation, https://pytest-django.readthedocs.io/
+# Last modified: 13/09/2026
+# Acknowledgement: Drafted with Claude (Anthropic); the author installed and
+#   verified every dependency. Reference: pytest-django,
+#   https://pytest-django.readthedocs.io/
 
-# Test-only dependencies; the runtime image installs
-# only requirements.txt.
-
+# Test-only. The runtime image installs requirements.txt alone.
 -r requirements.txt
 
-# Runner: parametrize, fixtures and native JUnit XML.
 pytest~=8.3
 pytest-django~=4.9
-
-# Coverage, reported as Cobertura XML for the Jenkins coverage plugin.
 pytest-cov~=6.0
-
-# Parallel execution, optional (`-n auto`).
-pytest-xdist~=3.6
-
-# Frozen clock for the card-expiry tests.
-freezegun~=1.5
 
 # Smoke suite HTTP client.
 requests~=2.32
-
-# Ranges rather than pins; freeze once CI is stable.
