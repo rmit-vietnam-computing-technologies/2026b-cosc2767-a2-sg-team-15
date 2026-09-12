@@ -1,0 +1,85 @@
+pipeline {
+    agent any
+
+    environment {
+        // Docker image info
+        DOCKER_IMAGE_NAME = 'rmit-store-frontend'
+        DOCKER_TAG = "v2"
+        
+        //ECR information
+        AWS_ACCOUNT_ID = '909892551050'          
+        AWS_REGION = 'us-east-1'
+        ECR_REPO_NAME = 'rmit-store-frontend'    
+        ECR_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
+    }
+
+    stages {
+        // Ensure docker is running
+        stage('Ensure docker is running') {
+            steps {
+               sh '''
+                if ! docker ps &> /dev/null; then
+                    echo "Docker has not started"
+                    sudo service docker start
+                    sleep 10
+                    docker ps &> /dev/null || (echo "Docker failed to start" && exit 1)
+                else
+                    echo "Docker is already running."
+                fi
+               '''
+
+            }
+        }
+
+        // 
+        stage('Build Docker Image') {
+            steps {
+                echo 'Building Docker image...'
+                dir('webapp/client') {
+                    sh 'docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} .'
+                }
+                echo 'Docker image built'
+            }
+        }
+
+        // stage('Testing purchasing and correct credit card validation') {
+        //     steps {
+        //         echo 'Temporary test(Also placeholder for now)'
+        //         dir('webapp/client/tests') {
+        //         sh 'pytest rmit-store-order.py'
+        //     }
+        //         echo 'Checking out test passed'
+        //     }
+        // }   
+
+        // Pushing to ECR
+        stage('Push to ECR') {
+            steps {
+                script {
+                    withCredentials([
+                string(credentialsId: 'aws-access-key-id', variable: 'AWS_ACCESS_KEY_ID'),
+                string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
+                string(credentialsId: 'aws-session-token', variable: 'AWS_SESSION_TOKEN')
+            ]) {
+                        sh '''
+                            aws ecr get-login-password --region ${AWS_REGION} | \
+                                docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                    
+                            docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ${ECR_URI}:latest
+                            docker push ${ECR_URI}:latest
+                        '''
+                    }
+                }
+            echo "Pushed image to ECR correctly"
+            }
+        }
+    }
+    post {
+        success {
+            echo 'Pipeline suceeded'
+        }
+        failure {
+            echo 'Pipeline failed'
+        }
+    }
+}

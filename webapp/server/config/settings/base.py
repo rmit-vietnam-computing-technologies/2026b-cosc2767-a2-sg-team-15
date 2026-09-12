@@ -70,6 +70,7 @@ THIRD_PARTY_APPS = [
     "corsheaders",
     "django_filters",
     "drf_spectacular",
+    "django_prometheus"
 ]
 
 LOCAL_APPS = [
@@ -84,6 +85,7 @@ LOCAL_APPS = [
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
+    "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -93,6 +95,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django_prometheus.middleware.PrometheusAfterMiddleware"
 ]
 
 TEMPLATES = [
@@ -126,6 +129,7 @@ DATABASES = {
         default="postgres://rmit:rmit@localhost:5432/rmit_store",
     )
 }
+DATABASES["default"]["ENGINE"] = "django_prometheus.db.backends.postgresql"
 # Reuse connections instead of opening one per request. Set to 0 if you put
 # PgBouncer in front of RDS.
 DATABASES["default"]["CONN_MAX_AGE"] = env.int("CONN_MAX_AGE", default=60)
