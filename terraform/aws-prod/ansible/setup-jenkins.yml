@@ -63,6 +63,7 @@
 
     - name: Provision let's encrypt certificate for nginx
       command: 'certbot -d {{ fqdn }} --agree-tos -m {{ letsenc_email }}'
+
     - name: Enable and restart nginx
       systemd:
         name: nginx
