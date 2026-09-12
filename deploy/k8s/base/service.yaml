@@ -1,0 +1,26 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Vo Hoang Khanh
+# ID: s3926310
+# Created  date: 13/09/2026
+# Last modified: 13/09/2026
+# Acknowledgement: Drafted with Claude (Anthropic); the author applied and
+#   verified it on k3s. Reference: k3s ServiceLB,
+#   https://docs.k3s.io/networking/networking-services#service-load-balancer
+
+# LoadBalancer on k3s means ServiceLB binds the port on the node itself.
+# Overlays set the port: 80 for prod, 8080 for staging.
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+spec:
+  type: LoadBalancer
+  selector:
+    app: api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

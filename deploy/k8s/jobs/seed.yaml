@@ -1,0 +1,48 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Vo Hoang Khanh
+# ID: s3926310
+# Created  date: 13/09/2026
+# Last modified: 13/09/2026
+# Acknowledgement: Drafted with Claude (Anthropic); the author applied and
+#   verified it on k3s. Reference: Jobs,
+#   https://kubernetes.io/docs/concepts/workloads/controllers/job/
+
+# Demo catalogue plus demo accounts. Idempotent upstream, so re-running is safe.
+# The admin credentials come from the Secret; $(VAR) is expanded by Kubernetes.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: seed
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: Never
+      imagePullSecrets:
+        - name: ecr-pull
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+        - name: seed
+          image: IMAGE_PLACEHOLDER
+          imagePullPolicy: IfNotPresent
+          args:
+            - python
+            - manage.py
+            - seed_demo
+            - --demo-users
+            - --admin-email
+            - $(SEED_ADMIN_EMAIL)
+            - --admin-password
+            - $(SEED_ADMIN_PASSWORD)
+          envFrom:
+            - configMapRef:
+                name: api-config
+            - secretRef:
+                name: api-secret
