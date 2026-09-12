@@ -18,8 +18,6 @@ FROM nginx:alpine
 # Copy built /dist into html of nginx
 COPY --from=builder /app/dist/ /usr/share/nginx/html/
 
-# Copy runtime config
-COPY public/config.js /usr/share/nginx/html/config.js
 
 # Nginx
 RUN echo 'server { \
