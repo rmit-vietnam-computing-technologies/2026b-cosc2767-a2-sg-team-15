@@ -1,0 +1,64 @@
+---
+- name: Setup Monitoring instance
+  hosts: monitoring_instance
+  become: true
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install required dependencies
+      apt:
+        pkg:
+          - gnupg
+          - git
+          - curl
+          - ca-certificates
+        state: present
+
+    # Adapted from Docker guide: https://docs.docker.com/engine/install/debian/
+    - name: Create apt keyring dir
+      file:
+        path: /etc/apt/keyrings/
+        state: directory
+        mode: '0755'
+
+    - name: Download Docker repo key
+      get_url:
+        url: https://download.docker.com/linux/debian/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        # sudo chmod a+r /etc/apt/keyrings/docker.asc
+        mode: '0644'
+
+    - name: Add docker apt repo
+      apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Install docker, nodejs and python3 plus venv
+      apt:
+        pkg:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+          - docker-compoes
+        state: present
+
+    - name: Enable and start Docker
+      systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Add user to docker group
+      user:
+        name: admin
+        groups: docker
+        append: true
+
+    # Add steps to install the prometheus/grafana container itself
+    # And configure nginx reverse proxy (I will handle TLS setup)
