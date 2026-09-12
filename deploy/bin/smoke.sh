@@ -30,6 +30,13 @@ MEMBER_EMAIL=$(grep '^SEED_ADMIN_EMAIL=' "$SECRETS" | cut -d= -f2-)
 MEMBER_PASSWORD=$(grep '^SEED_ADMIN_PASSWORD=' "$SECRETS" | cut -d= -f2-)
 
 mkdir -p webapp/server/test-reports
+
+# test.sh normally builds this; a manual run may not have.
+docker image inspect "rmit-store-api-test:$TAG" >/dev/null 2>&1 || {
+  [ -f .env ] || printf 'SECRET_KEY=ci-only\nPOSTGRES_PASSWORD=ci-only\nSEED_ADMIN_PASSWORD=ci-only\n' > .env
+  GIT_COMMIT="$TAG" docker compose -f compose.yaml -f compose.ci.yaml build test
+}
+
 docker run --rm \
   -e SMOKE_BASE_URL="$BASE_URL" \
   -e SMOKE_EXPECTED_COMMIT="$TAG" \
