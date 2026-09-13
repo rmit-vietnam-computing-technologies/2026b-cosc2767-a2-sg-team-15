@@ -5,16 +5,12 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 07/09/2026
-# Last modified: 09/09/2026
-# Acknowledgement: Reference: .dockerignore file syntax,
+# Last modified: 14/09/2026
+# Acknowledgement: Reference: .dockerignore syntax,
 #   https://docs.docker.com/build/concepts/context/#dockerignore-files
 
-# Never enters the build context. The two that matter:
-# .env (would bake a laptop's DJANGO_SETTINGS_MODULE into the image) and
-# .venv/ (wrong interpreter, largest thing here). tests/ is deliberately not
-# listed; only the test target copies it.
-#
-# Patterns anchor at the context root unless prefixed with **/.
+# .env would bake a laptop's settings into the image; .venv is the wrong interpreter.
+# tests/ is not listed on purpose: only the test target copies it.
 
 .env
 .env.*
@@ -25,11 +21,9 @@ venv/
 **/*.py[cod]
 .pytest_cache/
 
-# Generated at build or run time
 staticfiles/
 media/
 
-# Test output
 test-reports/
 .coverage
 .coverage.*
