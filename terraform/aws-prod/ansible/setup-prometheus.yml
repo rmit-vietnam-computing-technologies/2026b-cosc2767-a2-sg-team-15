@@ -89,6 +89,20 @@
       command:
         - "--config.file=etc/prometheus/prometheus.yml"
 
+    #(leaving it here just to ask if its possible (all the config, pull and start the containers's code are in docker-compose.yml)
+    # - name: Copy monitoring configuration to server
+    #   copy:
+    #     src: monitoring/
+    #     dest: /opt/rmit-store/monitoring/
+    #     owner: admin
+    #     group: admin
+    #     mode: '0755'
+
+    # - name: Start monitoring stack with Docker Compose
+    #   command:
+    #     cmd: docker-compose up -d
+    #     chdir: /opt/rmit-store/monitoring
+
     - name: Setup nginx site for Prometheus
       # bao step...
 
