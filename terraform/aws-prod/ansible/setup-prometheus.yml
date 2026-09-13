@@ -63,13 +63,31 @@
         append: true
 
     - name: Copy prometheus config to server
-      # step...
+      copy:
+        src: monitoring/prometheus/prometheus.yml
+        dest: /etc/prometheus/prometheus.yml
+        owner: root
+        group: root
+        mode: '0644'
+        
 
     - name: Pull Prometheus docker image
-      # step...
+      community.docker.docker_image:
+      name: prom/prometheus:latest
+      source: pull
 
     - name: Start Prometheus container
-      # step...
+      community.docker.docker_image:
+      name: prometheus
+      image: prom/prometheus:latest
+      state: started
+      restart-policy: unless-stopped
+      ports:
+        - "9090:9090"
+      volumes:
+        - /etc/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      command:
+        - "--config.file=etc/prometheus/prometheus.yml"
 
     - name: Setup nginx site for Prometheus
       # bao step...
