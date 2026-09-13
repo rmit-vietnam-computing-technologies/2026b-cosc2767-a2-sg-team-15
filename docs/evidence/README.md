@@ -31,6 +31,12 @@ folders are the manual deploys that came first and are appendix material.
 | `secrets-from-ssm.png` | The Secret's value equals the SSM parameter |
 | `k3s-staging-and-prod-two-namespaces.png` | Both environments on one cluster, same image, ports 8080 and 80 |
 | `metrics-endpoint-through-nginx.png` | django-prometheus metrics served through the container's nginx |
+| `k3s-hpa-scale.png` | Manual scale to three replicas and the HPA bounds |
+| `jenkins-stage-view-green.png` | A main build with every stage green, prod included |
+| `jenkins-junit-api-tests.png` | The build's test tables: 10 unit and integration rows, 2 smoke rows per environment |
+| `jenkins-console-deploy-staging.png` | Migrate, rollout and smoke inside the staging stage |
+| `jenkins-red-stops-before-prod.png`, `jenkins-failure-email.png` | A broken test stops the run before prod and mails the team |
+| `jenkins-prod-skipped-on-branch.png` | Prod skipped on a feature branch |
 
 ## Before the pipeline
 
@@ -46,4 +52,5 @@ folders are the manual deploys that came first and are appendix material.
 | `plan-a/` to `plan-e/` | Step-by-step captures from each manual deploy |
 
 What the tests cover is in `webapp/server/tests/README.md`; how to reproduce
-the pipeline is in `deploy/README.md`.
+the pipeline is in `deploy/README.md`; the commands behind every capture are
+in `CAPTURE.md`.
