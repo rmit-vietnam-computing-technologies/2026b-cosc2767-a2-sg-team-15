@@ -1,0 +1,12 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Vo Hoang Khanh
+# ID: s3926310
+# Created  date: 13/09/2026
+# Last modified: 13/09/2026
+# Acknowledgement: Kept next to the files it protects.
+
+# Filled-in secrets. Only the .example templates are committed.
+*.secret.env

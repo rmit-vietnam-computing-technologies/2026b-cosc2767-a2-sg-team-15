@@ -1,3 +1,23 @@
+// RMIT University Vietnam
+// Course: COSC2767|COSC2805 Systems Deployment and Operations
+// Semester: 2026B
+// Assessment: Assignment 2
+// Author: Vo Hoang Khanh (API stages and post block; frontend stages by Phuong)
+// ID: s3926310
+// Created  date: 14/09/2026
+// Last modified: 14/09/2026
+// Acknowledgement: API stages drafted with Claude (Anthropic); every script
+//   they call was run by hand first (see deploy/README.md). Reference: Jenkins
+//   declarative pipeline syntax, https://www.jenkins.io/doc/book/pipeline/syntax/
+
+// One push runs: API tests, frontend image, API image, staging, prod.
+// Prod only on main and only after staging smoke passed. Any red stage
+// stops the run and mails the team.
+//
+// Credentials, by ID: aws-access-key-id, aws-secret-access-key,
+// aws-session-token (strings), k3s-kubeconfig (secret file).
+// Agent needs docker, aws and kubectl.
+
 pipeline {
     agent any
 
@@ -11,6 +31,9 @@ pipeline {
         AWS_REGION = 'us-east-1'
         ECR_REPO_NAME = 'rmit-store-frontend'    
         ECR_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
+
+        // Backend
+        ECR_API_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/rmit-store-api"
     }
 
     stages {
@@ -28,6 +51,21 @@ pipeline {
                 fi
                '''
 
+            }
+        }
+
+        // Nothing gets built or pushed if the suite is red.
+        stage('API: test') {
+            steps {
+                script {
+                    env.TAG = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                }
+                sh 'deploy/bin/test.sh $TAG'
+            }
+            post {
+                always {
+                    junit 'webapp/server/test-reports/junit.xml'
+                }
             }
         }
 
@@ -73,6 +111,60 @@ pipeline {
             echo "Pushed image to ECR correctly"
             }
         }
+
+        stage('API: build and push') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'aws-access-key-id',     variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
+                    string(credentialsId: 'aws-session-token',     variable: 'AWS_SESSION_TOKEN')
+                ]) {
+                    sh 'ECR_REPO=$ECR_API_REPO deploy/bin/build-push.sh $TAG'
+                }
+            }
+        }
+
+        stage('API: deploy staging') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'aws-access-key-id',     variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
+                    string(credentialsId: 'aws-session-token',     variable: 'AWS_SESSION_TOKEN'),
+                    file(credentialsId: 'k3s-kubeconfig',          variable: 'KUBECONFIG')
+                ]) {
+                    sh 'ECR_REPO=$ECR_API_REPO deploy/bin/deploy.sh staging $TAG'
+                    sh 'deploy/bin/smoke.sh staging $TAG'
+                }
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: 'webapp/server/test-reports/smoke-staging.xml'
+                }
+            }
+        }
+
+        // Same image staging just passed with, promoted. main only.
+        stage('API: deploy prod') {
+            when {
+                anyOf { branch 'main'; expression { env.GIT_BRANCH == 'origin/main' } }
+            }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'aws-access-key-id',     variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
+                    string(credentialsId: 'aws-session-token',     variable: 'AWS_SESSION_TOKEN'),
+                    file(credentialsId: 'k3s-kubeconfig',          variable: 'KUBECONFIG')
+                ]) {
+                    sh 'ECR_REPO=$ECR_API_REPO deploy/bin/deploy.sh prod $TAG'
+                    sh 'deploy/bin/smoke.sh prod $TAG'
+                }
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: 'webapp/server/test-reports/smoke-prod.xml'
+                }
+            }
+        }
     }
     post {
         success {
@@ -80,6 +172,10 @@ pipeline {
         }
         failure {
             echo 'Pipeline failed'
+            // Needs Jenkins > System > E-mail Notification configured with an SMTP server.
+            mail to: 'REPLACE_WITH_TEAM_EMAIL',
+                 subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER} (${env.TAG})",
+                 body: "A stage went red, prod was not touched. Console: ${env.BUILD_URL}console"
         }
     }
 }

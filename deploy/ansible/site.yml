@@ -1,0 +1,65 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Vo Hoang Khanh
+# ID: s3926310
+# Created  date: 03/09/2026
+# Last modified: 13/09/2026
+# Acknowledgement: Drafted with Claude (Anthropic); the author ran and
+#   verified it against the Terraform node. References: k3s installation,
+#   https://docs.k3s.io/installation/configuration; community.postgresql.postgresql_db,
+#   https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_db_module.html
+
+---
+# Turns the Terraform node into a single-node Kubernetes cluster and creates
+# one database per environment on RDS.
+#
+#     ansible-galaxy collection install -r requirements.yml
+#     ansible-playbook site.yml
+#
+# Idempotent: a second run reports zero changed.
+
+- name: Kubernetes node
+  hosts: k3s
+  become: true
+  roles:
+    - k3s
+  tags: [k3s]
+
+- name: Databases on RDS
+  hosts: k3s
+  become: true
+  tags: [database]
+  tasks:
+    # The module runs on the node because only the node can reach RDS.
+    - name: Install the Postgres driver the module needs
+      ansible.builtin.dnf:
+        name: python3-psycopg2
+        state: present
+
+    - name: Create one database per environment
+      community.postgresql.postgresql_db:
+        name: "{{ item }}"
+        login_host: "{{ rds_endpoint }}"
+        login_user: "{{ db_user }}"
+        login_password: "{{ db_password }}"
+        state: present
+      loop: "{{ db_names }}"
+
+- name: Verify from the control node
+  hosts: k3s
+  gather_facts: false
+  tags: [verify]
+  tasks:
+    - name: The cluster answers over the Elastic IP
+      ansible.builtin.command:
+        cmd: kubectl --kubeconfig {{ playbook_dir }}/k3s.kubeconfig get nodes -o wide
+      register: verify_nodes
+      changed_when: false
+      delegate_to: localhost
+      become: false
+
+    - name: Show it
+      ansible.builtin.debug:
+        msg: "{{ verify_nodes.stdout_lines }}"
