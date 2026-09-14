@@ -1,0 +1,41 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Vo Hoang Khanh
+# ID: s3926310
+# Created  date: 13/09/2026
+# Last modified: 13/09/2026
+# Acknowledgement: Drafted with Claude (Anthropic); the author applied and
+#   verified it on k3s. Reference: Jobs,
+#   https://kubernetes.io/docs/concepts/workloads/controllers/job/
+
+# Runs once per deploy, before the Deployment rolls, with the new image.
+# Two replicas never race on the schema this way. Never retried on failure:
+# a failed migration stops the pipeline, it does not loop.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: Never
+      imagePullSecrets:
+        - name: ecr-pull
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+        - name: migrate
+          image: IMAGE_PLACEHOLDER
+          imagePullPolicy: IfNotPresent
+          args: ["python", "manage.py", "migrate", "--noinput"]
+          envFrom:
+            - configMapRef:
+                name: api-config
+            - secretRef:
+                name: api-secret

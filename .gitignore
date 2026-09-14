@@ -22,6 +22,74 @@ desktop.ini
 .classpath
 .settings/
 
+# ---------------------------------------------------------------------------
+# Secrets and local configuration
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# --- Python ----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Test and coverage output
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+
+# --- Django ----------------------------------------------------------------
+*.log
+db.sqlite3
+db.sqlite3-journal
+
+# collectstatic output — generated at deploy time, never committed
+webapp/server/staticfiles/*
+!webapp/server/staticfiles/.gitkeep
+
+# Uploaded product images. In production these belong in S3, not on the
+# instance's disk (see USE_S3 in webapp/server/.env.example).
+webapp/server/media/
+webapp/server/.venv/
+
+# --- Node ------------------------------------------------------------------
+node_modules/
+webapp/client/dist/
+webapp/client/node_modules/
+.npm
+*.tsbuildinfo
+
+# ---------------------------------------------------------------------------
+# Test and coverage output
+#
+# Generated per build and published by Jenkins from the workspace. A committed
+# report is a stale number outliving the code it measured.
+# ---------------------------------------------------------------------------
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+*.cover
+test-reports/
+test-results/
+playwright-report/
+
+
 # ---------------------------------------------------------
 # Environment files and credentials
 # ---------------------------------------------------------
@@ -114,3 +182,21 @@ jenkins_home/jobs/**
 
 # tfplan
 **/*.tfplan
+# ---------------------------------------------------------------------------
+# Editors, OS and local caches not covered upstream
+# ---------------------------------------------------------------------------
+desktop.ini
+*.iml
+.project
+.classpath
+.settings/
+*.swo
+.cache/
+.tmp/
+*.tmp
+*.bak
+*.backup
+.docker/
+
+# Git does not track empty directories; keep the markers we add
+!**/.gitkeep

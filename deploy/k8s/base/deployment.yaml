@@ -1,0 +1,73 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Vo Hoang Khanh
+# ID: s3926310
+# Created  date: 13/09/2026
+# Last modified: 13/09/2026
+# Acknowledgement: Drafted with Claude (Anthropic); the author applied and
+#   verified it on k3s. Probe design follows the upstream README's health
+#   check table. Reference: Deployments,
+#   https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
+
+# Two replicas from the start: that is what forces media onto S3.
+# IMAGE_PLACEHOLDER is substituted by deploy.sh with the ECR image for this build.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      # gunicorn's graceful stop is 30s; give it room.
+      terminationGracePeriodSeconds: 35
+      imagePullSecrets:
+        - name: ecr-pull
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+        - name: api
+          image: IMAGE_PLACEHOLDER
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+          envFrom:
+            - configMapRef:
+                name: api-config
+            - secretRef:
+                name: api-secret
+          # nginx rewrites Host on these two paths, so the pod IP never trips ALLOWED_HOSTS.
+          readinessProbe:
+            httpGet:
+              path: /readyz/
+              port: http
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz/
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 192Mi
+            limits:
+              memory: 512Mi

@@ -1,0 +1,21 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Vo Hoang Khanh
+# ID: s3926310
+# Created  date: 02/09/2026
+# Last modified: 13/09/2026
+# Acknowledgement: Drafted with Claude (Anthropic); the author installed and
+#   verified every dependency. Reference: pytest-django,
+#   https://pytest-django.readthedocs.io/
+
+# Test-only. The runtime image installs requirements.txt alone.
+-r requirements.txt
+
+pytest~=8.3
+pytest-django~=4.9
+pytest-cov~=6.0
+
+# Smoke suite HTTP client.
+requests~=2.32
