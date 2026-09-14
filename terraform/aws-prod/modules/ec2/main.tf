@@ -22,6 +22,9 @@ import {
 
 resource "aws_iam_instance_profile" "LabInstanceProfile" {
   # Left blank beacuse it's already imported
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_security_group" "jenkins_sg" {
