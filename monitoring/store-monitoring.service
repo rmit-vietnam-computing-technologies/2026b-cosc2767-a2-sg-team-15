@@ -7,7 +7,7 @@ Description=RMIT store monitoring
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-WorkingDirectory=/opt/rmit-store-monitoring
+WorkingDirectory=/opt/rmit-store/monitoring
 ExecStart=/usr/bin/docker-compose up -d
 ExecStop=/usr/bin/docker-compoes down -d
 TimeoutStartSec=0
