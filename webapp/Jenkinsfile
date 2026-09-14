@@ -15,7 +15,8 @@
 // stops the run and mails the team.
 //
 // Credentials, by ID: aws-access-key-id, aws-secret-access-key,
-// aws-session-token (strings), k3s-kubeconfig (secret file).
+// aws-session-token (strings). The deploy stages write their own kubeconfig
+// with aws eks update-kubeconfig; kubectl signs in with those keys.
 // Agent needs docker, aws and kubectl.
 
 pipeline {
