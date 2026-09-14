@@ -28,3 +28,4 @@ admin_cidr = "0.0.0.0/0"
 # The first subnet listed hosts the node and must be public.
 # vpc_id     = "vpc-REPLACE"
 # subnet_ids = ["subnet-PUBLIC", "subnet-PRIVATE-A", "subnet-PRIVATE-B"]
+create_eks = true

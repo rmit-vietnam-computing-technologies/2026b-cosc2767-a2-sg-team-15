@@ -5,12 +5,13 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 03/09/2026
-# Last modified: 13/09/2026
+# Last modified: 14/09/2026
 # Acknowledgement: Kept next to the files it protects.
 
 
 inventory.ini
 group_vars/all.yml
 k3s.kubeconfig
+eks.kubeconfig
 
 *.retry
