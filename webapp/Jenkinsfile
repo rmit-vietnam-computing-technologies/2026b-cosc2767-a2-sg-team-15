@@ -125,13 +125,15 @@ pipeline {
         }
 
         stage('API: deploy staging') {
+            environment { KUBECONFIG = "${WORKSPACE}/eks.kubeconfig" }
             steps {
                 withCredentials([
                     string(credentialsId: 'aws-access-key-id',     variable: 'AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
-                    string(credentialsId: 'aws-session-token',     variable: 'AWS_SESSION_TOKEN'),
-                    file(credentialsId: 'k3s-kubeconfig',          variable: 'KUBECONFIG')
+                    string(credentialsId: 'aws-session-token',     variable: 'AWS_SESSION_TOKEN')
                 ]) {
+                    // The kubeconfig holds no secret; kubectl signs in with the keys above.
+                    sh 'aws eks update-kubeconfig --name rmit-store-eks --region $AWS_REGION --kubeconfig $KUBECONFIG'
                     sh 'ECR_REPO=$ECR_API_REPO deploy/bin/deploy.sh staging $TAG'
                     sh 'deploy/bin/smoke.sh staging $TAG'
                 }
