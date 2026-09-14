@@ -5,7 +5,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 13/09/2026
-# Last modified: 13/09/2026
+# Last modified: 14/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic); the author applied and
 #   verified it. Reference: Terraform variable definition files,
 #   https://developer.hashicorp.com/terraform/language/values/variables#variable-definitions-tfvars-files
@@ -27,3 +27,8 @@ admin_cidr = "0.0.0.0/0"
 # The first subnet listed hosts the node and must be public.
 # vpc_id     = "vpc-REPLACE"
 # subnet_ids = ["subnet-PUBLIC", "subnet-PRIVATE-A", "subnet-PRIVATE-B"]
+
+# EKS is an extra on top of the k3s node. Leave false for the everyday apply;
+# `terraform apply -var create_eks=true` builds it, `-var create_eks=false`
+# tears it down again. eks_azs, eks_version and node sizes have defaults.
+create_eks = false

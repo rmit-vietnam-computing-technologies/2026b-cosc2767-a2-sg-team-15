@@ -8,7 +8,7 @@
 # Created  date: 13/09/2026
 # Last modified: 14/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic); the author ran and
-#   verified it on k3s. References: kubectl create secret,
+#   verified it on k3s and EKS. References: kubectl create secret,
 #   https://kubernetes.io/docs/reference/kubectl/generated/kubectl_create/kubectl_create_secret_docker-registry/;
 #   kubectl rollout, https://kubernetes.io/docs/reference/kubectl/generated/kubectl_rollout/
 
@@ -42,10 +42,14 @@ kubectl -n "$NS" create secret docker-registry ecr-pull \
   --docker-password="$(aws ecr get-login-password --region "$AWS_REGION")" \
   --dry-run=client -o yaml | kubectl apply -f -
 
-kubectl -n "$NS" create configmap api-config --from-env-file="$K8S/$ENV.config.env" \
-  --dry-run=client -o yaml | kubectl apply -f -
-kubectl -n "$NS" create secret generic api-secret --from-env-file="$SECRETS" \
-  --dry-run=client -o yaml | kubectl apply -f -
+# Config and secrets, then a hash of both onto the pod template so a changed
+# value rolls the pods. Without it a rotated password leaves running pods on
+# the old one until something else restarts them.
+CONFIG_YAML=$(kubectl -n "$NS" create configmap api-config --from-env-file="$K8S/$ENV.config.env" --dry-run=client -o yaml)
+SECRET_YAML=$(kubectl -n "$NS" create secret generic api-secret --from-env-file="$SECRETS" --dry-run=client -o yaml)
+echo "$CONFIG_YAML" | kubectl apply -f -
+echo "$SECRET_YAML" | kubectl apply -f -
+CONFIG_HASH=$(printf '%s\n%s\n' "$CONFIG_YAML" "$SECRET_YAML" | sha256sum | cut -c1-16)
 
 # Schema first, exactly once, with the image about to serve.
 kubectl -n "$NS" delete job migrate --ignore-not-found --wait=true
@@ -57,7 +61,13 @@ if ! kubectl -n "$NS" wait --for=condition=complete job/migrate --timeout=180s; 
 fi
 
 # Then the code.
-kubectl kustomize "$K8S/overlays/$ENV" | sed "s|IMAGE_PLACEHOLDER|$IMAGE|" | kubectl apply -f -
+kubectl kustomize "$K8S/overlays/$ENV" \
+  | sed "s|IMAGE_PLACEHOLDER|$IMAGE|; s|CONFIG_HASH_PLACEHOLDER|$CONFIG_HASH|" | kubectl apply -f -
 kubectl -n "$NS" rollout status deployment/api --timeout=180s
 kubectl -n "$NS" get pods -o wide
-echo "deployed $IMAGE to $NS"
+
+# Not done until it answers from outside. On EKS this is where a new ELB
+# spends its first minute or two.
+URL=$(base_url "$NS")
+wait_for_http "$URL"
+echo "deployed $IMAGE to $NS, answering at $URL"

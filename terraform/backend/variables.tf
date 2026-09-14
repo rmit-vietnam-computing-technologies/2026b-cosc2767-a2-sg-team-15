@@ -5,7 +5,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 13/09/2026
-# Last modified: 13/09/2026
+# Last modified: 14/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic); the author applied and
 #   verified it. Reference: Terraform input variables,
 #   https://developer.hashicorp.com/terraform/language/values/variables
@@ -93,4 +93,47 @@ variable "db_password" {
     condition     = length(var.db_password) >= 8 && length(var.db_password) <= 41 && !can(regex("[/@\" ]|REPLACE", var.db_password))
     error_message = "db_password must be 8 to 41 chars, no / @ \" or space, and not the placeholder."
   }
+}
+
+# --- EKS, off by default ------------------------------------------------
+
+variable "create_eks" {
+  description = "Build the EKS cluster and node group from eks.tf. False leaves only the k3s node."
+  type        = bool
+  default     = false
+}
+
+variable "eks_version" {
+  description = "Kubernetes version for the control plane. Null takes the EKS default; later drift is ignored either way."
+  type        = string
+  default     = null
+}
+
+variable "eks_azs" {
+  description = "AZs whose subnets host the control plane and the nodes. Two or more, never us-east-1e."
+  type        = list(string)
+  default     = ["us-east-1a", "us-east-1b"]
+
+  validation {
+    condition     = length(var.eks_azs) >= 2 && !contains(var.eks_azs, "us-east-1e")
+    error_message = "eks_azs needs at least two zones and must not include us-east-1e, which EKS control planes cannot use."
+  }
+}
+
+variable "eks_node_instance_type" {
+  description = "Node size. Two of these plus the t3.medium stay well inside the lab's vCPU cap."
+  type        = string
+  default     = "t3.small"
+}
+
+variable "eks_node_min" {
+  description = "Node group minimum and initial size."
+  type        = number
+  default     = 2
+}
+
+variable "eks_node_max" {
+  description = "Node group maximum. Headroom for a rolling node replacement."
+  type        = number
+  default     = 3
 }

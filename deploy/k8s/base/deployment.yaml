@@ -5,14 +5,14 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 13/09/2026
-# Last modified: 13/09/2026
+# Last modified: 14/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic); the author applied and
 #   verified it on k3s. Probe design follows the upstream README's health
 #   check table. Reference: Deployments,
 #   https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
 
 # Two replicas from the start: that is what forces media onto S3.
-# IMAGE_PLACEHOLDER is substituted by deploy.sh with the ECR image for this build.
+# IMAGE_PLACEHOLDER and CONFIG_HASH_PLACEHOLDER are substituted by deploy.sh.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -31,6 +31,11 @@ spec:
     metadata:
       labels:
         app: api
+      # Hash of the ConfigMap and Secret contents. A rotated password or a
+      # new setting changes it and rolls the pods; a Secret update on its
+      # own never restarts anything.
+      annotations:
+        rmit-store/config-hash: CONFIG_HASH_PLACEHOLDER
     spec:
       # gunicorn's graceful stop is 30s; give it room.
       terminationGracePeriodSeconds: 35

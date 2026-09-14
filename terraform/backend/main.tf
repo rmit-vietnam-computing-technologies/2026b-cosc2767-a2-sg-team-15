@@ -5,7 +5,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 13/09/2026
-# Last modified: 13/09/2026
+# Last modified: 14/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic); the author applied and
 #   verified it. Bucket policy carried over from the Plan D rehearsal.
 #   References: terraform_data,
@@ -15,8 +15,8 @@
 #   aws_instance metadata_options,
 #   https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/instance#metadata-options
 
-# Backend: one k3s node, one RDS Postgres, one media bucket
-# per environment. Independent of terraform/aws-individual; point vpc_id and
+# Backend: one k3s node, one RDS Postgres, one media bucket per environment,
+# and an optional EKS cluster (eks.tf). Independent of terraform/aws-individual; point vpc_id and
 # subnet_ids at that VPC to co-locate.
 
 # --- Network  -------------------------------------------------
@@ -108,6 +108,19 @@ resource "aws_security_group" "db" {
     to_port         = 5432
     protocol        = "tcp"
     security_groups = [aws_security_group.node.id]
+  }
+
+  # Inline on purpose: a standalone rule on a group with inline rules gets
+  # removed on the next apply. Present only when the EKS nodes are.
+  dynamic "ingress" {
+    for_each = var.create_eks ? [1] : []
+    content {
+      description     = "Postgres from the EKS nodes"
+      from_port       = 5432
+      to_port         = 5432
+      protocol        = "tcp"
+      security_groups = [aws_security_group.eks_nodes[0].id]
+    }
   }
 
   egress {

@@ -21,11 +21,10 @@ ENV=${1:?usage: smoke.sh <staging|prod> <tag>}
 TAG=${2:?usage: smoke.sh <staging|prod> <tag>}
 cd "$(dirname "$0")/../.."
 
-K8S=deploy/k8s
 . deploy/bin/lib.sh
 SECRETS=$(mktemp); trap 'rm -f "$SECRETS"' EXIT
 secret_env_file "$ENV" "$SECRETS"
-BASE_URL=$(grep '^SMOKE_BASE_URL=' "$K8S/$ENV.config.env" | cut -d= -f2-)
+BASE_URL=$(base_url "$ENV")
 MEMBER_EMAIL=$(grep '^SEED_ADMIN_EMAIL=' "$SECRETS" | cut -d= -f2-)
 MEMBER_PASSWORD=$(grep '^SEED_ADMIN_PASSWORD=' "$SECRETS" | cut -d= -f2-)
 
