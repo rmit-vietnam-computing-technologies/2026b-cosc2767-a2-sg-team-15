@@ -127,13 +127,16 @@ Service. `/api/version/` reports the commit that is serving.
 
 ## 5. Jenkins
 
-Credentials, by ID: `aws-access-key-id`, `aws-secret-access-key`,
-`aws-session-token` (strings, from the Learner Lab, re-entered each session)
-and `k3s-kubeconfig` (secret file, `deploy/ansible/k3s.kubeconfig`). The
-stages in `deploy/jenkins/api-stages.groovy` run the same six scripts:
-test, build and push, deploy staging, smoke staging, and on `main` only,
-deploy prod and smoke prod. A red stage stops the run before prod and mails
-the team. Push to the repo to trigger it.
+Credentials, by ID: `aws-access-key-id`, `aws-secret-access-key` and
+`aws-session-token` (strings, from the Learner Lab, re-entered each
+session). No kubeconfig credential: the deploy stages write one into the
+workspace with `aws eks update-kubeconfig`, and kubectl signs in with those
+same keys. The agent needs docker, aws and kubectl, and more memory than a
+`t3.micro` because `test.sh` builds an image. The API stages in
+`webapp/Jenkinsfile` run the same six scripts: test, build and push, deploy
+staging, smoke staging, and on `main` only, deploy prod and smoke prod. A red
+stage stops the run before prod and mails the team. Push to the repo to
+trigger it.
 
 ## 6. Roll back
 
@@ -199,4 +202,3 @@ groups block the cluster's from being deleted. Namespaces first:
 KUBECONFIG=deploy/ansible/eks.kubeconfig kubectl delete ns staging prod
 cd terraform/backend && terraform apply -var create_eks=false
 ```
-
