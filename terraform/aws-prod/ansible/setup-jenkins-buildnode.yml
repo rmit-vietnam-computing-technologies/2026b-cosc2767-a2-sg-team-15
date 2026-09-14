@@ -66,6 +66,8 @@
           - nodejs
           - python3
           - python3-venv
+          - python3-pytest
+          - python3-selenium
         state: present
 
     - name: Create jenkins-builder user
