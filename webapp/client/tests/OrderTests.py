@@ -5,12 +5,19 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.options import Options
 
 BASE_URL = "http://localhost:5173/" 
 
 class TestOrder:
     def setup_method(self, method):
-        self.driver = webdriver.Chrome()
+        options = Options()
+        options.add_argument("--headless")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--window-size=1280,720")
+        
+        self.driver = webdriver.Chrome(options=options)
         self.driver.get(f"{BASE_URL}")
         self.driver.execute_script("window.localStorage.clear();")
         self.driver.execute_script("window.sessionStorage.clear();")
