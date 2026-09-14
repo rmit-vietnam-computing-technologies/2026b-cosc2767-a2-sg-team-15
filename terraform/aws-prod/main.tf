@@ -8,6 +8,14 @@ terraform {
       source = "cloudflare/cloudflare"
       version = "~> 5"
     }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.30"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.13"
+    }
   }
 }
 
