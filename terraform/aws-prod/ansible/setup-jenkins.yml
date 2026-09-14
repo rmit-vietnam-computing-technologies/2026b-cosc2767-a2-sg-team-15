@@ -51,8 +51,8 @@
 
     - name: Enable jenkins nginx site
       file:
-        src: /etc/nginx/sites-available/jenkins67.giabao06.dev
-        dest: /etc/nginx/sites-enabled/jenkins67.giabao06.dev
+        src: /etc/nginx/sites-available/{{ fqdn }}
+        dest: /etc/nginx/sites-enabled/{{ fqdn }}
         owner: root
         group: root
         mode: "0644"
