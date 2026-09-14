@@ -2,6 +2,18 @@
 # fused together as one, with few changes because some variables aren't there.
 # Here be dragons. -giabao06
 
+# Note: due to *the thing*, these are role-separated EKS clusters
+# One cluster running both canary and production version of FE or BE.
+#
+# The ideal setup would be that one cluster run the one specific environment (env-separated clusters):
+# One cluster running production version of BE AND FE, the other running Canary version.
+# In this case, the Internet-facing ALB would try to RNG 5% then forward to the right cluster,
+# but since it appears that I have to do some more
+# AWS-vendor-lock-in-but-learner-lab-disallow stuff (mainly Route53 weighted routing),
+# this is an accepted solution.
+
+# Anyway why am I wandering into cloud engineering territory? This is Sys Deployment, not Cloud Architecting.
+
 # Import the LabRole
 import {
   identity = {
@@ -21,7 +33,8 @@ data "aws_eks_cluster_versions" "default" {
   cluster_type = "eks"
 }
 
-# terraform/eks-full-terraform/security_groups.tf
+# Frontend cluster, mostly taken from terraform/eks-full-terraform/security_groups.tf
+
 # Security group for the EKS cluster control plane
 resource "aws_security_group" "eks_cluster_sg" {
   name        = "eks_cluster_sg"
@@ -51,8 +64,8 @@ resource "aws_security_group" "eks_cluster_sg" {
 # terraform/eks-full-terraform/eks.tf
 
 # --- EKS control plane ---
-resource "aws_eks_cluster" "prod_cluster" {
-  name     = "prod_cluster"
+resource "aws_eks_cluster" "frontend_cluster" {
+  name     = "frontend_cluster"
   role_arn = data.aws_iam_role.lab_role.arn
   version  = data.aws_eks_cluster_versions.default[0].cluster_version
 
@@ -70,14 +83,14 @@ resource "aws_eks_cluster" "prod_cluster" {
   }
 }
 
-resource "aws_eks_access_entry" "prod_LabRole_access_entry" {
-  cluster_name  = aws_eks_cluster.prod_cluster.name
+resource "aws_eks_access_entry" "fe_LabRole_access_entry" {
+  cluster_name  = aws_eks_cluster.frontend_cluster.name
   principal_arn = data.aws_iam_role.LabRole.arn
   type          = "STANDARD"
 }
 
-resource "aws_eks_access_policy_association" "prod_cluster_admin" {
-  cluster_name  = aws_eks_cluster.prod_cluster.name
+resource "aws_eks_access_policy_association" "fe_cluster_admin" {
+  cluster_name  = aws_eks_cluster.frontend_cluster.name
   principal_arn = data.aws_iam_role.LabRole.arn
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
 
@@ -88,8 +101,8 @@ resource "aws_eks_access_policy_association" "prod_cluster_admin" {
   depends_on = [aws_eks_access_entry.lab_role]
 }
 
-resource "aws_eks_access_policy_association" "prod_admin" {
-  cluster_name  = aws_eks_cluster.prod_cluster.name
+resource "aws_eks_access_policy_association" "fe_admin" {
+  cluster_name  = aws_eks_cluster.frontend_cluster.name
   principal_arn = data.aws_iam_role.LabRole.arn
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSAdminPolicy"
 
@@ -97,11 +110,11 @@ resource "aws_eks_access_policy_association" "prod_admin" {
     type = "cluster"
   }
 
-  depends_on = [aws_eks_access_entry.prod_LabRole_access_entry]
+  depends_on = [aws_eks_access_entry.fe_LabRole_access_entry]
 }
 
-resource "aws_eks_access_policy_association" "prod_edit" {
-  cluster_name  = aws_eks_cluster.prod_cluster.name
+resource "aws_eks_access_policy_association" "fe_edit" {
+  cluster_name  = aws_eks_cluster.frontend_cluster.name
   principal_arn = data.aws_iam_role.LabRole.arn
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSEditPolicy"
 
@@ -109,11 +122,11 @@ resource "aws_eks_access_policy_association" "prod_edit" {
     type = "cluster"
   }
 
-  depends_on = [aws_eks_access_entry.prod_LabRole_access_entry]
+  depends_on = [aws_eks_access_entry.fe_LabRole_access_entry]
 }
 
-resource "aws_eks_access_policy_association" "prod_view" {
-  cluster_name  = aws_eks_cluster.prod_cluster.name
+resource "aws_eks_access_policy_association" "fe_view" {
+  cluster_name  = aws_eks_cluster.frontend_cluster.name
   principal_arn = data.aws_iam_role.LabRole.arn
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy"
 
@@ -121,7 +134,76 @@ resource "aws_eks_access_policy_association" "prod_view" {
     type = "cluster"
   }
 
-  depends_on = [aws_eks_access_entry.prod_LabRole_access_entry]
+  depends_on = [aws_eks_access_entry.fe_LabRole_access_entry]
+}
+
+# Security group attached to worker nodes.
+# Every rule here was something we discovered was missing through hands-on
+# debugging - documented so nobody has to rediscover it:
+#   - NodePort range: needed for the ELB (or ALB's target-type instance mode)
+#     to reach services of type LoadBalancer / NodePort
+#   - Port 80: needed for the ALB (target-type ip) to reach pods directly
+#   - Port 22: needed for SSH troubleshooting (kubectl logs/exec is broken
+#     by a separate kubelet TLS issue unrelated to security groups)
+#   - Port 10250: control plane -> kubelet, needed for some cluster
+#     management operations
+resource "aws_security_group" "node_sg" {
+  name        = "eks-node-sg"
+  description = "Security group for EKS worker nodes"
+  vpc_id      = data.aws_vpc.default.id
+
+  ingress {
+    description = "NodePort range - needed for LoadBalancer/NodePort services"
+    from_port   = 30000
+    to_port     = 32767
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Direct pod access for ALB target-type ip"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "SSH for troubleshooting"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Control plane to kubelet"
+    from_port   = 10250
+    to_port     = 10250
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Allow all internal node-to-node traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    self        = true
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "eks-node-sg"
+    # Required for kubernetes.io/cluster tagging conventions
+    "kubernetes.io/cluster/eks-cluster" = "owned"
+  }
 }
 
 # --- Launch template for the node group ---
