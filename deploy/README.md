@@ -147,6 +147,19 @@ deploy/bin/rollback.sh prod           # kubectl rollout undo, then polls /api/ve
 Migrations are additive and are not rolled back; the code is what moves.
 A migration that fails stops the deploy before any pod changes.
 
+## 6b. Rotate the database password
+
+```bash
+openssl rand -hex 16                  # into terraform.tfvars (db_password) and deploy/ansible/group_vars/all.yml
+cd terraform/backend && terraform apply && cd ../..     # RDS and both DATABASE_URL parameters, about 90 seconds
+deploy/bin/deploy.sh staging $TAG     # new Secret, migrate proves the new password, config hash rolls the pods
+deploy/bin/deploy.sh prod $TAG
+```
+
+Running pods keep the old password until they are replaced, so between
+`terraform apply` and `deploy.sh` each environment fails its readiness
+probe. Do the two deploys straight after the apply.
+
 ## 7. Scale
 
 ```bash
@@ -181,10 +194,12 @@ aws ec2 start-instances --instance-ids <node-instance-id>
 
 Elastic IP, private IP, RDS, buckets and the k3s service come back as they were.
 
-EKS nodes live in an Auto Scaling group, which does not take kindly to
-being stopped from outside. Scale the group to zero before ending the lab
-and back afterwards; the control plane, addresses and namespaces persist,
-and pods reschedule as soon as a node is back.
+EKS nodes live in an Auto Scaling group. When the lab stops them, the group
+replaces them with fresh instances within a few minutes, the pods
+reschedule, and the ELB addresses do not change, so the API comes back on
+its own; the k3s node stays stopped until started. Scaling the group to
+zero before End Lab is still the cheaper and quieter option. The control
+plane, addresses and namespaces persist either way.
 
 ```bash
 aws eks update-nodegroup-config --cluster-name rmit-store-eks --nodegroup-name rmit-store-eks-nodes --scaling-config minSize=0,maxSize=3,desiredSize=0   # before End Lab

@@ -42,10 +42,14 @@ kubectl -n "$NS" create secret docker-registry ecr-pull \
   --docker-password="$(aws ecr get-login-password --region "$AWS_REGION")" \
   --dry-run=client -o yaml | kubectl apply -f -
 
-kubectl -n "$NS" create configmap api-config --from-env-file="$K8S/$ENV.config.env" \
-  --dry-run=client -o yaml | kubectl apply -f -
-kubectl -n "$NS" create secret generic api-secret --from-env-file="$SECRETS" \
-  --dry-run=client -o yaml | kubectl apply -f -
+# Config and secrets, then a hash of both onto the pod template so a changed
+# value rolls the pods. Without it a rotated password leaves running pods on
+# the old one until something else restarts them.
+CONFIG_YAML=$(kubectl -n "$NS" create configmap api-config --from-env-file="$K8S/$ENV.config.env" --dry-run=client -o yaml)
+SECRET_YAML=$(kubectl -n "$NS" create secret generic api-secret --from-env-file="$SECRETS" --dry-run=client -o yaml)
+echo "$CONFIG_YAML" | kubectl apply -f -
+echo "$SECRET_YAML" | kubectl apply -f -
+CONFIG_HASH=$(printf '%s\n%s\n' "$CONFIG_YAML" "$SECRET_YAML" | sha256sum | cut -c1-16)
 
 # Schema first, exactly once, with the image about to serve.
 kubectl -n "$NS" delete job migrate --ignore-not-found --wait=true
@@ -57,7 +61,8 @@ if ! kubectl -n "$NS" wait --for=condition=complete job/migrate --timeout=180s; 
 fi
 
 # Then the code.
-kubectl kustomize "$K8S/overlays/$ENV" | sed "s|IMAGE_PLACEHOLDER|$IMAGE|" | kubectl apply -f -
+kubectl kustomize "$K8S/overlays/$ENV" \
+  | sed "s|IMAGE_PLACEHOLDER|$IMAGE|; s|CONFIG_HASH_PLACEHOLDER|$CONFIG_HASH|" | kubectl apply -f -
 kubectl -n "$NS" rollout status deployment/api --timeout=180s
 kubectl -n "$NS" get pods -o wide
 
