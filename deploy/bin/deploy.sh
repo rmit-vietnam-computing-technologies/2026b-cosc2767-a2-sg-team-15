@@ -8,7 +8,7 @@
 # Created  date: 13/09/2026
 # Last modified: 14/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic); the author ran and
-#   verified it on k3s. References: kubectl create secret,
+#   verified it on k3s and EKS. References: kubectl create secret,
 #   https://kubernetes.io/docs/reference/kubectl/generated/kubectl_create/kubectl_create_secret_docker-registry/;
 #   kubectl rollout, https://kubernetes.io/docs/reference/kubectl/generated/kubectl_rollout/
 
@@ -60,4 +60,9 @@ fi
 kubectl kustomize "$K8S/overlays/$ENV" | sed "s|IMAGE_PLACEHOLDER|$IMAGE|" | kubectl apply -f -
 kubectl -n "$NS" rollout status deployment/api --timeout=180s
 kubectl -n "$NS" get pods -o wide
-echo "deployed $IMAGE to $NS"
+
+# Not done until it answers from outside. On EKS this is where a new ELB
+# spends its first minute or two.
+URL=$(base_url "$NS")
+wait_for_http "$URL"
+echo "deployed $IMAGE to $NS, answering at $URL"
