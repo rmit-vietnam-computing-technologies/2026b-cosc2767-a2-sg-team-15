@@ -31,6 +31,20 @@ pipeline {
             }
         }
 
+        stage('Changing config.js') {
+            steps {
+            dir('webapp/client/public') {
+                withEnv(["API_URL=https://rmit-store-api.giabao06.dev"]) {
+                    sh '''
+                        sed -i "s|/api|${API_URL}|g" ./config.js
+                        echo "===== config.js ====="
+                        cat ./config.js
+                    '''
+                }
+            }
+        }
+    }
+
         // 
         stage('Build Docker Image') {
             steps {
