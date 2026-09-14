@@ -69,7 +69,7 @@
         owner: root
         group: root
         mode: '0644'
-        
+
 
     - name: Pull Prometheus docker image
       community.docker.docker_image:
@@ -78,16 +78,16 @@
 
     - name: Start Prometheus container
       community.docker.docker_image:
-      name: prometheus
-      image: prom/prometheus:latest
-      state: started
-      restart-policy: unless-stopped
-      ports:
-        - "9090:9090"
-      volumes:
-        - /etc/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      command:
-        - "--config.file=etc/prometheus/prometheus.yml"
+        name: prometheus
+        image: prom/prometheus:latest
+        state: started
+        restart-policy: unless-stopped
+        ports:
+          - "9090:9090"
+        volumes:
+          - /etc/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+        command:
+          - "--config.file=etc/prometheus/prometheus.yml"
 
     #(leaving it here just to ask if its possible (all the config, pull and start the containers's code are in docker-compose.yml)
     # - name: Copy monitoring configuration to server
@@ -103,16 +103,27 @@
     #     cmd: docker-compose up -d
     #     chdir: /opt/rmit-store/monitoring
 
-    - name: Setup nginx site for Prometheus
-      # bao step...
+    - name: Setup nginx site for Grafana
+      template:
+        src: grafana.conf.j2
+        dest: '/etc/nginx/sites-available/{{ fqdn }}'
+        owner: root
+        group: root
+        mode: "0644"
 
     - name: Remove default nginx site config
       file:
         path: /etc/nginx/sites-enabled/default
         state: absent
 
-    - name: Enable prometheus nginx site
-      # bao step...
+    - name: Enable grafana nginx site
+      file:
+        src: /etc/nginx/sites-available/{{ fqdn }}
+        dest: /etc/nginx/sites-enabled/{{ fqdn }}
+        owner: root
+        group: root
+        mode: "0644"
+        state: link
 
     - name: Check nginx configuration
       command: nginx -t
