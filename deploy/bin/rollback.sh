@@ -6,7 +6,7 @@
 # Author: Vo Hoang Khanh
 # ID: s3926310
 # Created  date: 13/09/2026
-# Last modified: 13/09/2026
+# Last modified: 14/09/2026
 # Acknowledgement: Drafted with Claude (Anthropic); the author rehearsed it
 #   on k3s. Reference: kubectl rollout undo,
 #   https://kubernetes.io/docs/reference/kubectl/generated/kubectl_rollout/kubectl_rollout_undo/
@@ -20,7 +20,8 @@ set -euo pipefail
 ENV=${1:?usage: rollback.sh <staging|prod>}
 cd "$(dirname "$0")/../.."
 
-BASE_URL=$(grep '^SMOKE_BASE_URL=' "deploy/k8s/$ENV.config.env" | cut -d= -f2-)
+. deploy/bin/lib.sh
+BASE_URL=$(base_url "$ENV")
 
 kubectl -n "$ENV" rollout undo deployment/api
 kubectl -n "$ENV" rollout status deployment/api --timeout=180s

@@ -53,3 +53,20 @@ output "ssm_parameter_paths" {
   description = "Where deploy.sh reads each environment's secrets from."
   value       = { for env in var.environments : env => "/${var.name_prefix}/${env}" }
 }
+
+# Null until create_eks is true.
+
+output "eks_cluster_name" {
+  description = "EKS cluster name, for update-kubeconfig and the node group scaling commands."
+  value       = one(aws_eks_cluster.this[*].name)
+}
+
+output "eks_kubeconfig_command" {
+  description = "Writes a kubeconfig that signs in with the current lab credentials."
+  value       = try("aws eks update-kubeconfig --name ${aws_eks_cluster.this[0].name} --region ${var.region} --kubeconfig deploy/ansible/eks.kubeconfig", null)
+}
+
+output "eks_nodes_security_group_id" {
+  description = "The node SG the RDS rule allows. Attach further ingress here if needed."
+  value       = one(aws_security_group.eks_nodes[*].id)
+}

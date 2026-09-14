@@ -17,7 +17,7 @@ One screenshot per point, named as in `README.md`. Run from the repo root
 with a live lab session. Setup once per terminal:
 
 ```bash
-export KUBECONFIG=$PWD/deploy/ansible/k3s.kubeconfig
+export KUBECONFIG=$PWD/deploy/ansible/k3s.kubeconfig     # eks.kubeconfig for the EKS set
 export ECR_REPO=115972158049.dkr.ecr.us-east-1.amazonaws.com/rmit-store-api
 TAG=$(git rev-parse --short HEAD)
 NODE=54.144.69.199
@@ -127,13 +127,70 @@ curl -s http://$NODE/metrics | grep -E '^django_http_(responses_total_by_status_
 curl -s -o /dev/null -w '%{http_code}\n' -H "Host: 172.31.81.134:80" http://$NODE/metrics
 ```
 
+## EKS
+
+Same manifests, same scripts, second cluster. `KUBECONFIG` points at
+`deploy/ansible/eks.kubeconfig` for all of these; the ELB hostnames come
+from the Services.
+
+```bash
+export KUBECONFIG=$PWD/deploy/ansible/eks.kubeconfig
+STAGING=$(kubectl -n staging get svc api -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+PROD=$(kubectl -n prod get svc api -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+```
+
+**terraform-eks-apply.png**: the cluster resources in state, the flag on.
+
+```bash
+cd terraform/backend && terraform state list | grep -E 'eks|launch_template|ec2_tag' && terraform output | grep eks_; cd ../..
+```
+
+**eks-nodes-ready.png**: two nodes on the EKS kubelet build, metrics-server up.
+
+```bash
+kubectl get nodes -o wide && kubectl -n kube-system get deploy metrics-server
+```
+
+**eks-two-namespaces.png**: same image, two namespaces, one ELB each.
+
+```bash
+kubectl get svc,deploy,hpa -A | grep -v kube-system
+curl -s http://$STAGING:8080/api/version/; echo; curl -s http://$PROD/api/version/; echo
+```
+
+**eks-elb-readyz.png**: database and storage ok from inside a pod on the node role, through the load balancer.
+
+```bash
+curl -s http://$PROD/readyz/; echo
+kubectl -n prod exec deploy/api -- curl -s -m 2 http://169.254.169.254/latest/meta-data/iam/security-credentials/; echo
+```
+
+**eks-rollback-version-check.png**: back one revision on prod, verified from outside.
+
+```bash
+deploy/bin/rollback.sh prod
+kubectl -n prod rollout history deployment/api
+```
+
+**eks-hpa-metrics.png**: the HPA reading real CPU through metrics-server.
+
+```bash
+kubectl -n prod get hpa && kubectl top pods -n prod
+```
+
+**eks-rds-ingress.png**: the RDS group admits both node groups and nothing else.
+
+```bash
+aws ec2 describe-security-groups --group-ids sg-0a6cbcfad983c95b1 --query 'SecurityGroups[0].IpPermissions[].[FromPort,UserIdGroupPairs[0].GroupId]' --output table
+```
+
 ## Jenkins, once the stages are merged and a build has run
 
 **jenkins-stage-view-green.png**: the stage view of a main build, all stages green, prod included. This is the body screenshot for the whole pipeline.
 
 **jenkins-junit-api-tests.png**: the build's Tests tab showing the 10 unit and integration rows plus the 2 smoke rows per environment.
 
-**jenkins-console-deploy-staging.png**: the `API: deploy staging` console, from `job.batch/migrate condition met` through `successfully rolled out` and `2 passed`.
+**jenkins-console-deploy-staging.png**: the `API: deploy staging` console, from `Added new context` and `job.batch/migrate condition met` through `answering at http://...elb.amazonaws.com:8080` and `2 passed`.
 
 **jenkins-red-stops-before-prod.png**: push a commit that breaks a test (flip an assert in `test_money.py`), let it run, capture the stage view with `API: test` red and every later stage skipped, then revert. Pair it with the failure email in **jenkins-failure-email.png**.
 
@@ -146,4 +203,12 @@ Credentials and the node are gone until you restart:
 ```bash
 aws ec2 start-instances --instance-ids i-0c8ceb9bdc37f5f4b >/dev/null
 aws ec2 wait instance-running --instance-ids i-0c8ceb9bdc37f5f4b && sleep 60 && kubectl get nodes
+```
+
+The EKS control plane keeps running; only the nodes need bringing back if
+they were scaled to zero before the session ended:
+
+```bash
+aws eks update-nodegroup-config --cluster-name rmit-store-eks --nodegroup-name rmit-store-eks-nodes --scaling-config minSize=2,maxSize=3,desiredSize=2
+KUBECONFIG=$PWD/deploy/ansible/eks.kubeconfig kubectl get nodes -w     # two Ready in about two minutes
 ```
