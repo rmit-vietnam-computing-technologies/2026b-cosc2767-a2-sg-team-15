@@ -41,6 +41,13 @@ credentials in `~/.aws/credentials` and its key pair as
 from an instance wearing LabRole, the EKS access entry is built for the
 session role.
 
+Every terminal that runs the scripts starts with one line, and a new terminal needs it again:
+
+```bash
+. deploy/bin/env.sh            # eks; ". deploy/bin/env.sh k3s" for the fallback
+```
+It exports AWS_PAGER, GIT_PAGER, AWS_REGION, KUBECONFIG and ECR_REPO (from the caller's account), sets TAG to the current commit (TAG=<tag> . deploy/bin/env.sh picks an existing one), refuses stale lab credentials before anything else can, and prints the nodes and the load balancers. deploy.sh quitting at its usage line, or kubectl talking to localhost:8080, means it was not sourced in this terminal.
+
 ## 1. Infrastructure
 
 ```bash
