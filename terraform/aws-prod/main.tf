@@ -21,6 +21,12 @@ terraform {
 
 provider "aws" {
   region = "us-east-1"
+
+  # The EKS module tags the subnets for the cloud provider with aws_ec2_tag.
+  # Without this, aws_subnet strips those tags on every apply.
+  ignore_tags {
+    key_prefixes = ["kubernetes.io/"]
+  }
 }
 
 provider "cloudflare" {
