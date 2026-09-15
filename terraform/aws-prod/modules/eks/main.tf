@@ -14,6 +14,15 @@
 
 # Anyway why am I wandering into cloud engineering territory? This is Sys Deployment, not Cloud Architecting.
 
+terraform {
+  required_providers {
+    kubernetes = {
+      source                = "hashicorp/kubernetes"
+      configuration_aliases = [kubernetes.frontend, kubernetes.backend]
+    }
+  }
+}
+
 # Import the LabRole
 data "aws_iam_role" "LabRole" {
   name = "LabRole"
@@ -23,6 +32,49 @@ data "aws_iam_role" "LabRole" {
 data "aws_eks_cluster_versions" "default" {
   cluster_type = "eks"
 }
+
+resource "kubernetes_config_map_v1_data" "frontend_auth" {
+  provider = kubernetes.frontend
+  metadata {
+    name      = "aws-auth"
+    namespace = "kube-system"
+  }
+
+  data = {
+    mapRoles = yamlencode([
+      {
+        rolearn  = data.aws_iam_role.LabRole.arn
+        username = "labrole-admin"
+        groups   = ["system:masters"]
+      }
+    ])
+  }
+
+  force      = true
+  depends_on = [aws_eks_cluster.frontend_cluster]
+}
+
+resource "kubernetes_config_map_v1_data" "backend_auth" {
+  provider = kubernetes.backend
+  metadata {
+    name      = "aws-auth"
+    namespace = "kube-system"
+  }
+
+  data = {
+    mapRoles = yamlencode([
+      {
+        rolearn  = data.aws_iam_role.LabRole.arn
+        username = "labrole-admin"
+        groups   = ["system:masters"]
+      }
+    ])
+  }
+
+  force      = true
+  depends_on = [aws_eks_cluster.backend_cluster]
+}
+
 
 # Frontend cluster, mostly taken from terraform/eks-full-terraform/security_groups.tf
 
@@ -81,49 +133,6 @@ resource "aws_eks_cluster" "frontend_cluster" {
   }
 }
 
-
-resource "aws_eks_access_policy_association" "fe_cluster_admin" {
-  cluster_name  = aws_eks_cluster.frontend_cluster.name
-  principal_arn = data.aws_iam_role.LabRole.arn
-  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-
-  access_scope {
-    type = "cluster"
-  }
-}
-
-resource "aws_eks_access_policy_association" "fe_admin" {
-  cluster_name  = aws_eks_cluster.frontend_cluster.name
-  principal_arn = data.aws_iam_role.LabRole.arn
-  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSAdminPolicy"
-
-  access_scope {
-    type = "cluster"
-  }
-}
-
-resource "aws_eks_access_policy_association" "fe_edit" {
-  cluster_name  = aws_eks_cluster.frontend_cluster.name
-  principal_arn = data.aws_iam_role.LabRole.arn
-  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSEditPolicy"
-
-  access_scope {
-    type = "cluster"
-  }
-
-}
-
-resource "aws_eks_access_policy_association" "fe_view" {
-  cluster_name  = aws_eks_cluster.frontend_cluster.name
-  principal_arn = data.aws_iam_role.LabRole.arn
-  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy"
-
-  access_scope {
-    type = "cluster"
-  }
-
-  depends_on = [aws_eks_access_entry.fe_LabRole_access_entry]
-}
 
 # Security group attached to worker nodes.
 # Every rule here was something we discovered was missing through hands-on
@@ -202,8 +211,8 @@ resource "aws_security_group" "node_sg" {
 # hop beyond the host's own namespace. Setting this to 2 here means every
 # node launches with the fix already in place - no manual
 # `aws ec2 modify-instance-metadata-options` needed after the fact.
-resource "aws_launch_template" "node" {
-  name_prefix = "eks-node-lt"
+resource "aws_launch_template" "frontend_node" {
+  name_prefix = "eks-node-lt-"
   key_name    = var.keypair_name
 
   block_device_mappings {
@@ -220,7 +229,10 @@ resource "aws_launch_template" "node" {
     http_tokens                 = "required"
   }
 
-  vpc_security_group_ids = [aws_security_group.node_sg.id]
+  vpc_security_group_ids = [
+    aws_security_group.node_sg.id,
+    aws_eks_cluster.frontend_cluster.vpc_config[0].cluster_security_group_id
+  ]
 
   tag_specifications {
     resource_type = "instance"
@@ -304,16 +316,6 @@ resource "aws_eks_cluster" "backend_cluster" {
 }
 
 
-resource "aws_eks_access_policy_association" "be_cluster_admin" {
-  cluster_name  = aws_eks_cluster.backend_cluster.name
-  principal_arn = data.aws_iam_role.LabRole.arn
-  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-
-  access_scope {
-    type = "cluster"
-  }
-}
-
 # --- Subnet tags for the cloud provider ----------------------------------
 
 # type: LoadBalancer becomes a classic ELB. The controller finds subnets by
@@ -355,7 +357,29 @@ resource "aws_security_group" "backend_eks_nodes" {
   tags = merge({ Name = "backend-eks-nodes" })
 }
 
-# Use the launch template from above.
+resource "aws_launch_template" "backend_nodes" {
+
+  name_prefix = "backend-eks-node-"
+
+  vpc_security_group_ids = [
+    aws_eks_cluster.backend_cluster.vpc_config[0].cluster_security_group_id,
+    aws_security_group.backend_eks_nodes.id,
+  ]
+
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 2
+  }
+
+  tag_specifications {
+    resource_type = "instance"
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
 
 # instance_types stays here, not in the template: the two cannot both set it.
 resource "aws_eks_node_group" "backend_workers" {
@@ -388,5 +412,4 @@ resource "aws_eks_node_group" "backend_workers" {
     ignore_changes = [scaling_config[0].desired_size]
   }
 
-  depends_on = [aws_eks_access_policy_association.be_cluster_admin]
 }
