@@ -259,8 +259,8 @@ resource "aws_eks_node_group" "fe_workers" {
   instance_types = ["t3.medium"]
 
   launch_template {
-    id      = aws_launch_template.node.id
-    version = aws_launch_template.node.latest_version
+    id      = aws_launch_template.frontend_node.id
+    version = aws_launch_template.frontend_node.latest_version
   }
 
   scaling_config {
@@ -401,8 +401,8 @@ resource "aws_eks_node_group" "backend_workers" {
   }
 
   launch_template {
-    id      = aws_launch_template.node.id
-    version = aws_launch_template.node.latest_version
+    id      = aws_launch_template.backend_nodes.id
+    version = aws_launch_template.backend_nodes.latest_version
   }
 
   tags = merge({ Name = "backend-eks-nodes" })
