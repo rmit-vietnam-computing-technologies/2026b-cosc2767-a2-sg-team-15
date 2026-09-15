@@ -74,7 +74,7 @@ resource "aws_eks_cluster" "this" {
     public_access_cidrs     = [var.admin_cidr]
   }
 
-  # API mode from day one. Adding access_config to a live cluster forces a
+  # API mode. Adding access_config to a live cluster forces a
   # replace in this provider, so it is never changed after creation. The
   # creator gets nothing automatically; the access entry below is the only
   # admin, and it is the lab session role, not one session of it.
