@@ -3,7 +3,7 @@
   hosts: jenkins_buildnode
   become: true
 
-- tasks:
+  tasks:
     - name: Update apt cache
       apt:
         update_cache: true
@@ -11,6 +11,7 @@
 
     - name: Install required dependencies
       apt:
+        update_cache: true
         pkg:
           - openjdk-21-jdk
           - fontconfig
@@ -26,7 +27,7 @@
         path: /tmp
         src: tmpfs
         fstype: tmpfs
-        opts: "defaults, size=3G, mode=1777"
+        opts: "defaults,size=3G,mode=1777"
         state: mounted
 
     # Adapted from Docker guide: https://docs.docker.com/engine/install/debian/
@@ -45,7 +46,7 @@
 
     - name: Add docker apt repo
       apt_repository:
-        repo: "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        repo: "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
         state: present
 
     # https://github.com/cyberowl-town/akvns.org/blob/main/terraform/aws/ansible/playbook.yml (thanks Swyrin)
@@ -81,25 +82,26 @@
 
     - name: Download the jenkins buildnode jar from jenkins host
       get_url:
-        url: http://{{ jenkins_host }}/jnlpJars/agent.jar
+        url: https://{{ jenkins_host }}/jnlpJars/agent.jar
         dest: /home/jenkins-builder/agent.jar
-        become: true
-        become_user: jenkins-builder
+        owner: jenkins-builder
+        group: jenkins-builder
+        mode: '0700'
 
     - name: Create secrets file
       copy:
         content: "{{ jenkins_secret }}"
         dest: /home/jenkins-builder/jenkins_secret
         mode: '0600'
-        become: true
-        become_user: jenkins-builder
+        owner: jenkins-builder
+        group: jenkins-builder
 
     - name: Install Jenkins build node systemd service
       template:
         src: node-service.service.j2
-        target: /usr/share/systemd/system/jenkins-node.service
+        dest: /usr/lib/systemd/system/jenkins-node.service
         owner: root
-        group: rood
+        group: root
         mode: '0644'
 
     - name: Enable jenkins agent service

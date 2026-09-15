@@ -11,8 +11,9 @@
 
     - name: Install nginx and required dependencies for Jenkins
       apt:
+        update_cache: true
         pkg:
-          - openjdk-21-jdk
+          - openjdk-21-jre
           - fontconfig
           - nginx
           - gnupg
