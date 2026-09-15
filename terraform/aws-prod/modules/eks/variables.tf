@@ -25,3 +25,8 @@ variable "node_max_size" {
   type    = number
   default = 2
 }
+
+variable "vpc_id" {
+  description = "VPC ID"
+  type = string
+}

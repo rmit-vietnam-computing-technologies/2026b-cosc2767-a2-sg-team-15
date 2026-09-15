@@ -15,19 +15,10 @@
 # Anyway why am I wandering into cloud engineering territory? This is Sys Deployment, not Cloud Architecting.
 
 # Import the LabRole
-import {
-  identity = {
-    name = "LabRole"
-  }
-  to = aws_iam_role.LabRole
+data "aws_iam_role" "LabRole" {
+  name = "LabRole"
 }
 
-resource "aws_iam_role" "LabRole" {
-  # Left blank beacuse it's already imported
-  lifecycle {
-    prevent_destroy = true
-  }
-}
 
 data "aws_eks_cluster_versions" "default" {
   cluster_type = "eks"
@@ -39,7 +30,7 @@ data "aws_eks_cluster_versions" "default" {
 resource "aws_security_group" "eks_cluster_sg" {
   name        = "eks_cluster_sg"
   description = "Security group for EKS clusters"
-  vpc_id      = data.aws_vpc.default.id
+  vpc_id      = var.vpc_id
 
   ingress {
     description = "Allow all internal traffic within the security group"
@@ -66,8 +57,8 @@ resource "aws_security_group" "eks_cluster_sg" {
 # --- EKS control plane ---
 resource "aws_eks_cluster" "frontend_cluster" {
   name     = "frontend_cluster"
-  role_arn = data.aws_iam_role.lab_role.arn
-  version  = data.aws_eks_cluster_versions.default[0].cluster_version
+  role_arn = data.aws_iam_role.LabRole.arn
+  version  = data.aws_eks_cluster_versions.default.cluster_versions[0].cluster_version
 
   vpc_config {
     subnet_ids              = var.subnet_ids
@@ -98,7 +89,7 @@ resource "aws_eks_access_policy_association" "fe_cluster_admin" {
     type = "cluster"
   }
 
-  depends_on = [aws_eks_access_entry.lab_role]
+  depends_on = [aws_eks_access_entry.fe_LabRole_access_entry]
 }
 
 resource "aws_eks_access_policy_association" "fe_admin" {
@@ -150,7 +141,7 @@ resource "aws_eks_access_policy_association" "fe_view" {
 resource "aws_security_group" "node_sg" {
   name        = "eks-node-sg"
   description = "Security group for EKS worker nodes"
-  vpc_id      = data.aws_vpc.default.id
+  vpc_id      = var.vpc_id
 
   ingress {
     description = "NodePort range - needed for LoadBalancer/NodePort services"
@@ -252,8 +243,8 @@ resource "aws_launch_template" "node" {
 }
 
 # --- Managed node group ---
-resource "aws_eks_node_group" "prod_workers" {
-  cluster_name    = aws_eks_cluster.prod_cluster.name
+resource "aws_eks_node_group" "fe_workers" {
+  cluster_name    = aws_eks_cluster.frontend_cluster.name
   node_group_name = "prod_node_group"
   node_role_arn   = data.aws_iam_role.LabRole.arn
   subnet_ids      = var.subnet_ids
@@ -275,6 +266,156 @@ resource "aws_eks_node_group" "prod_workers" {
   }
 
   depends_on = [
-    aws_eks_access_policy_association.prod_cluster_admin,
+    aws_eks_access_policy_association.fe_cluster_admin,
   ]
+}
+
+# Backend cluster, taken from terraform/backend
+
+# --- Control plane --------------------------------------------------------
+
+resource "aws_eks_cluster" "backend_cluster" {
+  name     = "backend_cluster"
+  role_arn = data.aws_iam_role.LabRole.arn
+  version  = data.aws_eks_cluster_versions.default.cluster_versions[0].cluster_version
+
+  vpc_config {
+    subnet_ids              = var.subnet_ids
+    endpoint_public_access  = true
+    endpoint_private_access = true
+    security_group_ids = [aws_security_group.eks_cluster_sg.id]
+  }
+
+  # API mode from day one. Adding access_config to a live cluster forces a
+  # replace in this provider, so it is never changed after creation. The
+  # creator gets nothing automatically; the access entry below is the only
+  # admin, and it is the lab session role, not one session of it.
+  access_config {
+    authentication_mode                         = "API_AND_CONFIG_MAP"
+    bootstrap_cluster_creator_admin_permissions = false
+  }
+
+  # Extended support is $0.60/h once a version ages out. Not for a lab.
+  upgrade_policy {
+    support_type = "STANDARD"
+  }
+
+  # tags = merge(local.tags, { Name = local.eks_name })
+
+  lifecycle {
+    # AWS moves the version on its own schedule; Terraform must never try to
+    # move it back.
+    ignore_changes = [version]
+
+    precondition {
+      condition     = length(var.subnet_ids) >= 2
+      error_message = "EKS needs subnets in at least two AZs; check eks_azs against the VPC."
+    }
+  }
+}
+
+# The lab session role gets cluster admin. Sessions come and go; the role
+# stays, so Jenkins and a laptop on the same lab credentials both get in.
+resource "aws_eks_access_entry" "backend_LabRole_admin" {
+
+  cluster_name  = aws_eks_cluster.backend_cluster.name
+  principal_arn = data.aws_iam_role.LabRole.arn
+  type          = "STANDARD"
+
+  lifecycle {
+    # The node group creates its own entry for LabRole; a second one for the
+    # same ARN would collide. Run Terraform with lab CLI credentials, not
+    # from an instance wearing LabRole.
+    # precondition {
+      # condition     = local.caller_role_name != "LabRole"
+      # error_message = "Apply from Learner Lab CLI credentials (voclabs), not from an instance profile."
+      #}
+  }
+}
+
+resource "aws_eks_access_policy_association" "be_cluster_admin" {
+  cluster_name  = aws_eks_cluster.backend_cluster.name
+  principal_arn = data.aws_iam_role.LabRole.arn
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+
+  access_scope {
+    type = "cluster"
+  }
+}
+
+# --- Subnet tags for the cloud provider ----------------------------------
+
+# type: LoadBalancer becomes a classic ELB. The controller finds subnets by
+# these two tags and nothing else.
+# resource "aws_ec2_tag" "eks_subnet_cluster" {
+# for_each = toset(var.subnet_ids)
+
+#  resource_id = each.value
+#  key         = "kubernetes.io/cluster/backend_cluster"
+#  value       = "shared"
+#}
+
+#resource "aws_ec2_tag" "eks_subnet_elb" {
+#  for_each = toset(var.subnet_ids)
+#
+# resource_id = each.value
+# key         = "kubernetes.io/role/elb"
+#  value       = "1"
+# }
+
+# --- Nodes ----------------------------------------------------------------
+
+# Exists so the RDS security group has something to allow. Not tagged with
+# the cluster name on purpose: the cloud provider wants exactly one tagged
+# SG per node when it wires an ELB, and EKS already tags the cluster SG.
+resource "aws_security_group" "backend_eks_nodes" {
+
+  name        = "backend_eks-nodes"
+  description = "EKS nodes: handle for the RDS ingress rule"
+  vpc_id      = var.vpc_id
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge({ Name = "backend-eks-nodes" })
+}
+
+# Use the launch template from above.
+
+# instance_types stays here, not in the template: the two cannot both set it.
+resource "aws_eks_node_group" "backend_node_group" {
+  cluster_name    = aws_eks_cluster.backend_cluster.name
+  node_group_name = "backend-eks-nodes"
+  node_role_arn   = data.aws_iam_role.LabRole.arn
+  subnet_ids      = var.subnet_ids
+  instance_types  = ["t3.medium"]
+  ami_type        = "AL2023_x86_64_STANDARD"
+
+  scaling_config {
+    min_size     = var.node_min_size
+    max_size     = var.node_max_size
+    desired_size = var.node_desired_size
+  }
+
+  update_config {
+    max_unavailable = 1
+  }
+
+  launch_template {
+    id      = aws_launch_template.node.id
+    version = aws_launch_template.node.latest_version
+  }
+
+  tags = merge({ Name = "backend-eks-nodes" })
+
+  # Scaling to 0 before End Lab and back afterwards happens outside Terraform.
+  lifecycle {
+    ignore_changes = [scaling_config[0].desired_size]
+  }
+
+  depends_on = [aws_eks_access_policy_association.be_cluster_admin]
 }

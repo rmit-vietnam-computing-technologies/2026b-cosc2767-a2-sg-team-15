@@ -50,6 +50,13 @@ module "tlscert" {
   api_record = var.api_name
 }
 
+module "eks" {
+ source = "./modules/eks"
+ keypair_name = var.keypair_name
+ subnet_ids = module.vpc.public_subnet_id
+ vpc_id = module.vpc.vpc_id
+}
+
 resource "cloudflare_dns_record" "jenkins" {
   zone_id = var.zone_id
   # please do not the brainrot ehe~ the course code is COSC2767...

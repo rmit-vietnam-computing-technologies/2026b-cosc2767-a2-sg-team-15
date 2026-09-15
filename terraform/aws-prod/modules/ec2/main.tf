@@ -12,19 +12,8 @@ data "aws_ami" "debian" {
     owners = ["136693071363"]
 }
 
-# Import the LabInstanceProfile
-import {
-  identity = {
-    name = "LabInstanceProfile"
-  }
-  to = aws_iam_instance_profile.LabInstanceProfile
-}
-
-resource "aws_iam_instance_profile" "LabInstanceProfile" {
-  # Left blank beacuse it's already imported
-  lifecycle {
-    prevent_destroy = true
-  }
+data "aws_iam_instance_profile" "LabInstanceProfile" {
+  name = "LabInstanceProfile"
 }
 
 resource "aws_security_group" "jenkins_sg" {
@@ -95,7 +84,7 @@ resource "aws_instance" "public_jenkins" {
   key_name = var.keypair_name
   subnet_id = var.vpc_public_subnet_id
   vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
-  iam_instance_profile = aws_iam_instance_profile.LabInstanceProfile.name
+  iam_instance_profile = data.aws_iam_instance_profile.LabInstanceProfile.name
   tags = {
     Name = "jenkins instance"
   }
@@ -107,7 +96,7 @@ resource "aws_instance" "public_prometheus" {
   key_name = var.keypair_name
   subnet_id = var.vpc_public_subnet_id
   vpc_security_group_ids = [aws_security_group.jenkins_sg.id]
-  iam_instance_profile = aws_iam_instance_profile.LabInstanceProfile.name
+  iam_instance_profile = data.aws_iam_instance_profile.LabInstanceProfile.name
   tags = {
     Name = "prometheus instance"
   }
@@ -119,7 +108,7 @@ resource "aws_instance" "lim_public_jenkins_buildnode" {
   key_name = var.keypair_name
   subnet_id = var.vpc_public_subnet_id
   vpc_security_group_ids = [aws_security_group.jenkins_buildnode_sg.id]
-  iam_instance_profile = aws_iam_instance_profile.LabInstanceProfile.name
+  iam_instance_profile = data.aws_iam_instance_profile.LabInstanceProfile.name
   tags = {
     Name = "jenkins build node instance"
   }
