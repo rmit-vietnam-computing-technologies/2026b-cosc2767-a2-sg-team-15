@@ -33,6 +33,13 @@ resource "aws_security_group" "eks_cluster_sg" {
   vpc_id      = var.vpc_id
 
   ingress {
+    description = "Allow nodes to control plane API"
+    from_port = 443
+    to_port = 443
+    protocol = "tcp"
+    security_groups = [aws_security_group.node_sg.id]
+  }
+  ingress {
     description = "Allow all internal traffic within the security group"
     from_port   = 0
     to_port     = 0
@@ -74,11 +81,6 @@ resource "aws_eks_cluster" "frontend_cluster" {
   }
 }
 
-resource "aws_eks_access_entry" "fe_LabRole_access_entry" {
-  cluster_name  = aws_eks_cluster.frontend_cluster.name
-  principal_arn = data.aws_iam_role.LabRole.arn
-  type          = "STANDARD"
-}
 
 resource "aws_eks_access_policy_association" "fe_cluster_admin" {
   cluster_name  = aws_eks_cluster.frontend_cluster.name
@@ -88,8 +90,6 @@ resource "aws_eks_access_policy_association" "fe_cluster_admin" {
   access_scope {
     type = "cluster"
   }
-
-  depends_on = [aws_eks_access_entry.fe_LabRole_access_entry]
 }
 
 resource "aws_eks_access_policy_association" "fe_admin" {
@@ -100,8 +100,6 @@ resource "aws_eks_access_policy_association" "fe_admin" {
   access_scope {
     type = "cluster"
   }
-
-  depends_on = [aws_eks_access_entry.fe_LabRole_access_entry]
 }
 
 resource "aws_eks_access_policy_association" "fe_edit" {
@@ -113,7 +111,6 @@ resource "aws_eks_access_policy_association" "fe_edit" {
     type = "cluster"
   }
 
-  depends_on = [aws_eks_access_entry.fe_LabRole_access_entry]
 }
 
 resource "aws_eks_access_policy_association" "fe_view" {
@@ -190,11 +187,6 @@ resource "aws_security_group" "node_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = {
-    Name = "eks-node-sg"
-    # Required for kubernetes.io/cluster tagging conventions
-    "kubernetes.io/cluster/eks-cluster" = "owned"
-  }
 }
 
 # --- Launch template for the node group ---
@@ -245,7 +237,7 @@ resource "aws_launch_template" "node" {
 # --- Managed node group ---
 resource "aws_eks_node_group" "fe_workers" {
   cluster_name    = aws_eks_cluster.frontend_cluster.name
-  node_group_name = "prod_node_group"
+  node_group_name = "fe_node_group"
   node_role_arn   = data.aws_iam_role.LabRole.arn
   subnet_ids      = var.subnet_ids
 
@@ -265,9 +257,6 @@ resource "aws_eks_node_group" "fe_workers" {
     max_size     = var.node_max_size
   }
 
-  depends_on = [
-    aws_eks_access_policy_association.fe_cluster_admin,
-  ]
 }
 
 # Backend cluster, taken from terraform/backend
@@ -314,24 +303,6 @@ resource "aws_eks_cluster" "backend_cluster" {
   }
 }
 
-# The lab session role gets cluster admin. Sessions come and go; the role
-# stays, so Jenkins and a laptop on the same lab credentials both get in.
-resource "aws_eks_access_entry" "backend_LabRole_admin" {
-
-  cluster_name  = aws_eks_cluster.backend_cluster.name
-  principal_arn = data.aws_iam_role.LabRole.arn
-  type          = "STANDARD"
-
-  lifecycle {
-    # The node group creates its own entry for LabRole; a second one for the
-    # same ARN would collide. Run Terraform with lab CLI credentials, not
-    # from an instance wearing LabRole.
-    # precondition {
-      # condition     = local.caller_role_name != "LabRole"
-      # error_message = "Apply from Learner Lab CLI credentials (voclabs), not from an instance profile."
-      #}
-  }
-}
 
 resource "aws_eks_access_policy_association" "be_cluster_admin" {
   cluster_name  = aws_eks_cluster.backend_cluster.name
@@ -387,7 +358,7 @@ resource "aws_security_group" "backend_eks_nodes" {
 # Use the launch template from above.
 
 # instance_types stays here, not in the template: the two cannot both set it.
-resource "aws_eks_node_group" "backend_node_group" {
+resource "aws_eks_node_group" "backend_workers" {
   cluster_name    = aws_eks_cluster.backend_cluster.name
   node_group_name = "backend-eks-nodes"
   node_role_arn   = data.aws_iam_role.LabRole.arn
