@@ -148,6 +148,7 @@ pipeline {
 
         stage('Frontend: Build Docker Image') {
             steps {
+                environment { KUBECONFIG = "${WORKSPACE}/eks.kubeconfig" }
                 script {
                     // So it isn't apparently.
                     // At this point Kubectl still has backend config, so might as well take the API URL from there.
