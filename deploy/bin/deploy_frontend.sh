@@ -1,55 +1,47 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # RMIT University Vietnam
 # Course: COSC2767|COSC2805 Systems Deployment and Operations
 # Semester: 2026B
 # Assessment: Assignment 2
-# Author: <>
-# ID: s3926310
-# Created  date: 13/09/2026
-# Last modified: 14/09/2026
-# Acknowledgement: Drafted with Claude (Anthropic); the author ran and
-#   verified it on k3s and EKS. References: kubectl create secret,
-#   https://kubernetes.io/docs/reference/kubectl/generated/kubectl_create/kubectl_create_secret_docker-registry/;
-#   kubectl rollout, https://kubernetes.io/docs/reference/kubectl/generated/kubectl_rollout/
+# Author: Bao Nguyen Pham Gia
+# ID: s4143691
+# Created  date: 16/09/2026
+# Last modified: 16/09/2026
+# Acknowledgement: Drafted with Claude (Anthropic) (yes, I gave in to the AI slop.)
 
-# Deploy one build to one environment: config and secrets, migrate once,
-# then roll the Deployment and wait for it.
-#
-#     ECR_REPO=... KUBECONFIG=... deploy/bin/deploy.sh <staging|prod> <tag>
-#
-# Secrets come from SSM Parameter Store (/rmit-store/<env>/*), or from a
-# file if SECRET_FILE is set.
+#!/usr/bin/env bash
 
 set -euo pipefail
-ENV=${1:?usage: deploy.sh <staging|prod> <tag>}
-TAG=${2:?usage: deploy.sh <staging|prod> <tag>}
-: "${ECR_REPO:?ECR_REPO is required}"
-AWS_REGION=${AWS_REGION:-us-east-1}
-cd "$(dirname "$0")/../.."
 
-K8S=deploy/k8s
-NS=$ENV
-IMAGE="$ECR_REPO:$TAG"
-. deploy/bin/lib.sh
-SECRETS=$(mktemp); trap 'rm -f "$SECRETS"' EXIT
-secret_env_file "$ENV" "$SECRETS"
+if [[ $# -ne 2 ]]; then
+  echo "Usage: ECR_REPO=<repo-url> $0 <deployment-name> <image-tag>" >&2
+  exit 1
+fi
+
+if [[ -z "${ECR_REPO:-}" ]]; then
+  echo "Error: ECR_REPO environment variable must be set" >&2
+  exit 1
+fi
+
+DEPLOYMENT_NAME="$1"
+IMAGE_TAG="$2"
+
+# --- Adjust these to match your actual setup ---
+CLUSTER_NAME="frontend_cluster"
+REGION="us-east-1"                 # match wherever the lab actually provisions
+NAMESPACE=$DEPLOYMENT_NAME
+CONTAINER_NAME="${DEPLOYMENT_NAME}" # override below if the container name inside the pod spec differs
+# -------------------------------------------------
+
+IMAGE="${ECR_REPO}:${IMAGE_TAG}"
 
 kubectl get namespace "$NS" >/dev/null 2>&1 || kubectl create namespace "$NS"
 
-# ECR token lasts 12h; refreshed on every deploy. Cached images keep pods alive past that.
-kubectl -n "$NS" create secret docker-registry ecr-pull \
-  --docker-server="${ECR_REPO%%/*}" --docker-username=AWS \
-  --docker-password="$(aws ecr get-login-password --region "$AWS_REGION")" \
-  --dry-run=client -o yaml | kubectl apply -f -
+kubectl config use-context "${CLUSTER_NAME}"
 
-# Then the code.
-kubectl kustomize "$K8S/overlays/$ENV" \
-  | sed "s|IMAGE_PLACEHOLDER|$IMAGE|; s|CONFIG_HASH_PLACEHOLDER|$CONFIG_HASH|" | kubectl apply -f -
-kubectl -n "$NS" rollout status deployment/api --timeout=180s
-kubectl -n "$NS" get pods -o wide
+kubectl set image "deployment/${DEPLOYMENT_NAME}" \
+  "${CONTAINER_NAME}=${IMAGE}" \
+  -n "${NAMESPACE}"
 
-# Not done until it answers from outside. On EKS this is where a new ELB
-# spends its first minute or two.
-URL=$(base_url "$NS")
-wait_for_http "$URL"
-echo "deployed $IMAGE to $NS, answering at $URL"
+echo "Waiting for rollout..."
+kubectl rollout status "deployment/${DEPLOYMENT_NAME}" -n "${NAMESPACE}" --timeout=180s
