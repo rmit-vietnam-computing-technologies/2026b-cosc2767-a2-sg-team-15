@@ -1,0 +1,38 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Vo Hoang Khanh
+# ID: s3926310
+# Created  date: 07/09/2026
+# Last modified: 14/09/2026
+# Acknowledgement: Reference: .dockerignore syntax,
+#   https://docs.docker.com/build/concepts/context/#dockerignore-files
+
+# .env would bake a laptop's settings into the image; .venv is the wrong interpreter.
+# tests/ is not listed on purpose: only the test target copies it.
+
+.env
+.env.*
+
+.venv/
+venv/
+**/__pycache__/
+**/*.py[cod]
+.pytest_cache/
+
+staticfiles/
+media/
+
+test-reports/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+junit.xml
+
+.git/
+.gitignore
+Dockerfile
+.dockerignore
+*.md

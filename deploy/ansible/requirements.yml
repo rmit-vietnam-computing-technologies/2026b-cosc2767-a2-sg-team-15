@@ -1,0 +1,13 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Vo Hoang Khanh
+# ID: s3926310
+# Created  date: 06/09/2026
+# Last modified: 13/09/2026
+# Acknowledgement: Reference: Ansible Galaxy requirements files,
+#   https://docs.ansible.com/ansible/latest/galaxy/user_guide.html
+
+collections:
+  - name: community.postgresql   # postgresql_db, for the per-environment databases on RDS

@@ -1,0 +1,31 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Vo Hoang Khanh
+# ID: s3926310
+# Created  date: 03/09/2026
+# Last modified: 13/09/2026
+# Acknowledgement: Reference: Ansible variable precedence,
+#   https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_variables.html
+
+---
+# TEMPLATE, placeholders only.  cp group_vars/all.yml.example group_vars/all.yml
+# Every value here comes from `terraform output` in terraform/backend.
+
+# Elastic IP of the node. Goes into the API server certificate so kubectl
+# from a laptop or Jenkins trusts it.
+node_public_ip: REPLACE_WITH_NODE_PUBLIC_IP
+
+# RDS
+rds_endpoint: REPLACE_WITH_RDS_ENDPOINT
+db_user: rmit
+db_password: REPLACE_WITH_DATABASE_PASSWORD
+
+# One database per environment on the single instance.
+db_names:
+  - rmit_staging
+  - rmit_prod
+
+# Pin to a channel or an exact version; "stable" is what the installer defaults to.
+k3s_channel: stable

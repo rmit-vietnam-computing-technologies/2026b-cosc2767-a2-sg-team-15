@@ -1,0 +1,68 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Vo Hoang Khanh
+# ID: s3926310
+# Created  date: 07/09/2026
+# Last modified: 14/09/2026
+# Acknowledgement: Drafted with Claude (Anthropic) in a guided session; the
+#   author ran and verified it. References: nginx proxy module,
+#   https://nginx.org/en/docs/http/ngx_http_proxy_module.html; the nginx
+#   image's template rendering, https://hub.docker.com/_/nginx
+
+# The web tier's site for the Compose stack. The nginx image renders it at
+# start, substituting ${API_UPSTREAM}. Lives here rather than in
+# webapp/client because that image is the frontend workstream's.
+
+server {
+    listen      80 default_server;
+    server_name _;
+
+    root  /usr/share/nginx/html;
+    index index.html;
+
+    client_max_body_size 10M;
+
+    gzip            on;
+    gzip_types      text/css application/javascript application/json image/svg+xml;
+    gzip_min_length 1024;
+
+    # Resolve the api container at request time; its address changes when recreated.
+    resolver 127.0.0.11 ipv6=off valid=30s;
+    set $rmit_api http://${API_UPSTREAM};
+
+    # Unknown path is a Vue route, not a missing file.
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location = /config.js {
+        add_header Cache-Control "no-store";
+    }
+
+    location /assets/ {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    # Uploads from the volume shared with the api. Idle once USE_S3 is on.
+    location /media/ {
+        alias /srv/media/;
+        access_log off;
+        expires 7d;
+    }
+
+    # Everything the API tier owns. Host goes through untouched: Django builds image_url from it.
+    location ~ ^/(api|admin|healthz|readyz|metrics|static)(/|$) {
+        proxy_pass $rmit_api;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Forwarded-Host  $host;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_redirect off;
+        proxy_connect_timeout 5s;
+        proxy_read_timeout    60s;
+    }
+}

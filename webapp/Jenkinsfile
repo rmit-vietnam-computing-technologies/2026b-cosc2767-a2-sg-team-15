@@ -11,6 +11,16 @@
 // Stages were run by hand before being committed and pushed
 // Stages have been modified multiple time to fit evolving use cases from experimental deployment to production deployment
 
+// One push runs: API tests, frontend image, API image, staging, prod.
+// Prod only on main and only after staging smoke passed. Any red stage
+// stops the run and mails the team.
+//
+// Credentials, by ID: aws-access-key-id, aws-secret-access-key,
+// aws-session-token (strings). The deploy stages write their own kubeconfig
+// with aws eks update-kubeconfig; kubectl signs in with those keys.
+// Agent needs docker, aws and kubectl.
+
+
 pipeline {
     agent any
 
@@ -18,12 +28,17 @@ pipeline {
         // Docker image info
         DOCKER_IMAGE_NAME = 'rmit-store-frontend'
         DOCKER_TAG = "v2"
-        
+
         //ECR information
-        AWS_ACCOUNT_ID = '909892551050'          
+        AWS_ACCOUNT_ID = '175001367344'
         AWS_REGION = 'us-east-1'
-        ECR_REPO_NAME = 'rmit-store-frontend'    
+        ECR_REPO_NAME = 'frontend_ecr'
         ECR_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
+        BACKEND_ECR_REPO_NAME = 'backend_ecr'
+        BACKEND_ECR_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${BACKEND_ECR_REPO_NAME}"
+        // EKS info
+        BACKEND_EKS_NAME = 'backend_cluster'
+        FRONTEND_EKS_NAME = 'frontend_cluster'
     }
 
     stages {
@@ -31,7 +46,7 @@ pipeline {
         stage('Ensure docker is running') {
             steps {
                sh '''
-                if ! docker ps &> /dev/null; then
+                if ! docker ps > /dev/null; then
                     echo "Docker has not started"
                     sudo service docker start
                     sleep 10
@@ -44,28 +59,82 @@ pipeline {
             }
         }
 
-        stage('Changing config.js') {
+        // Nothing gets built or pushed if the suite is red.
+        stage('API: test') {
             steps {
-            dir('webapp/client/public') {
-                withEnv(["API_URL=https://rmit-store-api.giabao06.dev"]) {
-                    sh '''
-                        sed -i "s|/api|${API_URL}|g" ./config.js
-                        echo "===== config.js ====="
-                        cat ./config.js
-                    '''
+                script {
+                    env.TAG = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                }
+                sh 'export HOST_UID=$(id -u) HOST_GID=$(id -g) && deploy/bin/test.sh $TAG'
+            }
+            post {
+                always {
+                    junit 'webapp/server/test-reports/junit.xml'
                 }
             }
         }
-    }
 
-        // 
-        stage('Build Docker Image') {
+        //
+
+
+        stage('API: build and push') {
             steps {
-                echo 'Building Docker image...'
-                dir('webapp/client') {
-                    sh 'docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} .'
+                withCredentials([
+                    string(credentialsId: 'aws-access-key-id',     variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
+                    string(credentialsId: 'aws-session-token',     variable: 'AWS_SESSION_TOKEN')
+                ]) {
+                    sh 'ECR_REPO=$BACKEND_ECR_URI deploy/bin/build-push.sh $TAG'
                 }
-                echo 'Docker image built'
+            }
+        }
+
+
+        stage('API: deploy staging') {
+            environment { KUBECONFIG = "${WORKSPACE}/eks.kubeconfig" }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'aws-access-key-id',     variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
+                    string(credentialsId: 'aws-session-token',     variable: 'AWS_SESSION_TOKEN')
+                ]) {
+                    // The kubeconfig holds no secret; kubectl signs in with the keys above.
+                    sh 'aws eks update-kubeconfig --name $BACKEND_EKS_NAME --region $AWS_REGION --kubeconfig $KUBECONFIG'
+                    sh 'ECR_REPO=$BACKEND_ECR_URI deploy/bin/deploy.sh staging $TAG'
+                    sh 'ECR_REPO=$BACKEND_ECR_URI deploy/bin/seed.sh staging $TAG'
+                    sh 'deploy/bin/smoke.sh staging $TAG'
+                }
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: 'webapp/server/test-reports/smoke-staging.xml'
+                }
+            }
+        }
+
+        // Same image staging just passed with, promoted. main only.
+        stage('API: deploy prod') {
+            when {
+                anyOf { branch 'main'; expression { env.GIT_BRANCH == 'origin/main' } }
+            }
+            environment { KUBECONFIG = "${WORKSPACE}/eks.kubeconfig" }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'aws-access-key-id',     variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
+                    string(credentialsId: 'aws-session-token',     variable: 'AWS_SESSION_TOKEN')
+                ]) {
+                    // The kubeconfig holds no secret; kubectl signs in with the keys above.
+                    sh 'aws eks update-kubeconfig --name $BACKEND_EKS_NAME --region $AWS_REGION --kubeconfig $KUBECONFIG'
+                    sh 'ECR_REPO=$BACKEND_ECR_URI deploy/bin/deploy.sh prod $TAG'
+                    sh 'ECR_REPO=$BACKEND_ECR_URI deploy/bin/seed.sh prod $TAG'
+                    sh 'deploy/bin/smoke.sh prod $TAG'
+                }
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: 'webapp/server/test-reports/smoke-prod.xml'
+                }
             }
         }
 
@@ -77,10 +146,32 @@ pipeline {
         //     }
         //         echo 'Checking out test passed'
         //     }
-        // }   
+        // }
+
+        stage('Frontend: Build Docker Image') {
+            environment { KUBECONFIG = "${WORKSPACE}/eks.kubeconfig" }
+            steps {
+                script {
+                    // So it isn't apparently.
+                    // At this point Kubectl still has backend config, so might as well take the API URL from there.
+                    sh 'aws eks update-kubeconfig --name $BACKEND_EKS_NAME --region $AWS_REGION --kubeconfig $KUBECONFIG'
+                    def apiHost = sh(
+                        script: "kubectl get svc api -n prod -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'",
+                        returnStdout: true
+                    ).trim()
+                    env.API_URL = "http://${apiHost}/api"
+                }
+                echo 'Building Docker image...'
+                dir('webapp/client') {
+                    sh "echo $API_URL"
+                    sh 'docker build --build-arg API_URL="$API_URL" -t ${DOCKER_IMAGE_NAME}:${TAG} .'
+                }
+                echo 'Docker image built'
+            }
+        }
 
         // Pushing to ECR
-        stage('Push to ECR') {
+        stage('Frontend: Push to ECR') {
             steps {
                 script {
                     withCredentials([
@@ -91,13 +182,32 @@ pipeline {
                         sh '''
                             aws ecr get-login-password --region ${AWS_REGION} | \
                                 docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
-                    
-                            docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ${ECR_URI}:latest
-                            docker push ${ECR_URI}:latest
+
+                            docker tag ${DOCKER_IMAGE_NAME}:${TAG} ${ECR_URI}:${TAG}
+                            docker push ${ECR_URI}:${TAG}
                         '''
                     }
                 }
             echo "Pushed image to ECR correctly"
+            }
+        }
+
+                // Same image staging just passed with, promoted. main only.
+        stage('Frontend: deploy prod') {
+            when {
+                anyOf { branch 'main'; expression { env.GIT_BRANCH == 'origin/main' } }
+            }
+            environment { KUBECONFIG = "${WORKSPACE}/eks.kubeconfig" }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'aws-access-key-id',     variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
+                    string(credentialsId: 'aws-session-token',     variable: 'AWS_SESSION_TOKEN')
+                ]) {
+                    // The kubeconfig holds no secret; kubectl signs in with the keys above.
+                    sh 'aws eks update-kubeconfig --name $FRONTEND_EKS_NAME --region $AWS_REGION --kubeconfig $KUBECONFIG'
+                    sh 'ECR_REPO=$ECR_URI SERVICE_PORT=80 deploy/bin/deploy_frontend.sh frontend-prod $TAG'
+                }
             }
         }
     }
@@ -107,6 +217,10 @@ pipeline {
         }
         failure {
             echo 'Pipeline failed'
+            // Needs Jenkins > System > E-mail Notification configured with an SMTP server.
+            mail to: 'REPLACE_WITH_TEAM_EMAIL',
+                 subject: "FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER} (${env.TAG})",
+                 body: "A stage went red, prod was not touched. Console: ${env.BUILD_URL}console"
         }
     }
 }

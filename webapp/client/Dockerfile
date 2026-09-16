@@ -17,7 +17,7 @@
 # Build inside container
 # Builder environment to build Vue frontend
 FROM node:20-alpine AS builder
-
+ARG API_URL
 WORKDIR /app
 
 # Copy package.json and packagelock.json to install related dependencies first
@@ -27,6 +27,9 @@ RUN npm install
 # Copy existing source code in the current ec2-user host dirctory to /app in builder directory
 COPY . .
 RUN npm run build
+
+# Change the backend API
+RUN sed -i "s|/api|${API_URL}|g" /app/dist/config.js
 
 # Use nginx to serve frontend
 FROM nginx:alpine

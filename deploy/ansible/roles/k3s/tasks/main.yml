@@ -1,0 +1,56 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Vo Hoang Khanh
+# ID: s3926310
+# Created  date: 13/09/2026
+# Last modified: 13/09/2026
+# Acknowledgement: Drafted with Claude (Anthropic); the author ran and
+#   verified it on Amazon Linux 2023. References: k3s install script options,
+#   https://docs.k3s.io/installation/configuration#configuration-with-install-script;
+#   k3s cluster access, https://docs.k3s.io/cluster-access
+
+---
+# Single-node k3s. Bundled traefik is disabled: the API image carries its own
+# nginx and ServiceLB publishes the two environments on 80 and 8080.
+
+- name: Fetch the k3s installer
+  ansible.builtin.get_url:
+    url: https://get.k3s.io
+    dest: /usr/local/bin/k3s-install.sh
+    mode: "0755"
+
+# AL2023 runs SELinux permissive; the k3s-selinux rpm is skipped on purpose.
+- name: Install k3s
+  ansible.builtin.command:
+    cmd: /usr/local/bin/k3s-install.sh
+    creates: /usr/local/bin/k3s
+  environment:
+    INSTALL_K3S_CHANNEL: "{{ k3s_channel }}"
+    INSTALL_K3S_SKIP_SELINUX_RPM: "true"
+    INSTALL_K3S_SELINUX_WARN: "true"
+    INSTALL_K3S_EXEC: >-
+      server
+      --disable traefik
+      --write-kubeconfig-mode 644
+      --tls-san {{ node_public_ip }}
+
+- name: Wait for the node to be Ready
+  ansible.builtin.command:
+    cmd: k3s kubectl wait --for=condition=Ready node --all --timeout=180s
+  changed_when: false
+
+- name: Read the kubeconfig
+  ansible.builtin.slurp:
+    src: /etc/rancher/k3s/k3s.yaml
+  register: k3s_kubeconfig
+
+# Same file, pointed at the Elastic IP instead of loopback.
+- name: Write the kubeconfig next to the playbook
+  ansible.builtin.copy:
+    content: "{{ k3s_kubeconfig.content | b64decode | replace('127.0.0.1', node_public_ip) }}"
+    dest: "{{ playbook_dir }}/k3s.kubeconfig"
+    mode: "0600"
+  delegate_to: localhost
+  become: false

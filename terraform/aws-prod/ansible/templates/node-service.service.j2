@@ -1,0 +1,16 @@
+[Unit]
+Description = Jenkins build node service
+Wants = network-online.target
+After = network-online.target
+
+[Service]
+Type = simple
+User = jenkins-builder
+Group = jenkins-builder
+WorkingDirectory = /home/jenkins-builder
+ExecStart = /usr/bin/java -jar agent.jar -url https://{{ jenkins_host }}/ -webSocket -secret @jenkins_secret -name "build-node1" -workDir "/home/jenkins-builder"
+Restart = on-failure
+RestartSec = 5
+
+[Install]
+WantedBy = multi-user.target

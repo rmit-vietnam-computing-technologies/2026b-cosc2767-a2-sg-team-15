@@ -1,0 +1,52 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Bao Nguyen Pham Gia
+# ID: s4143691
+# Created  date: 16/09/2026
+# Last modified: 16/09/2026
+# Acknowledgement: Drafted with Claude (Anthropic) (yes, I gave in to the AI slop.)
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: __NAME__
+  labels:
+    app: __NAME__
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: __NAME__
+  template:
+    metadata:
+      labels:
+        app: __NAME__
+    spec:
+      containers:
+        - name: __NAME__
+          # Replaced by deploy-frontend.sh via sed before every `kubectl apply`.
+          image: __IMAGE__
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 20
