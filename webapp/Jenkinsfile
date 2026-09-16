@@ -102,13 +102,7 @@ pipeline {
                 string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
                 string(credentialsId: 'aws-session-token', variable: 'AWS_SESSION_TOKEN')
             ]) {
-                        sh '''
-                            aws ecr get-login-password --region ${AWS_REGION} | \
-                                docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
-
-                            docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ${ECR_URI}:latest
-                            docker push ${ECR_URI}:latest
-                        '''
+                        sh 'ECR_REPO=$ECR_URI deploy/bin/build-push.sh $TAG'
                     }
                 }
             echo "Pushed image to ECR correctly"
