@@ -13,6 +13,7 @@ resource "aws_db_instance" "prod" {
   username = var.rds_username
   password = var.rds_password
   multi_az = true
+  db_subnet_group_name = aws_db_subnet_group.main.name
   publicly_accessible = false
   tags = {
     Name = "prod-rds"

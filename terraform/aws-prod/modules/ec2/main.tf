@@ -109,6 +109,9 @@ resource "aws_instance" "lim_public_jenkins_buildnode" {
   subnet_id = var.vpc_public_subnet_id
   vpc_security_group_ids = [aws_security_group.jenkins_buildnode_sg.id]
   iam_instance_profile = data.aws_iam_instance_profile.LabInstanceProfile.name
+  root_block_device {
+    volume_size = 32
+  }
   tags = {
     Name = "jenkins build node instance"
   }

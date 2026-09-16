@@ -3,6 +3,7 @@ variable "subnet_ids" {
   type = list(string)
 }
 
+
 variable "rds_username" {
   description = "RDS username"
   type = string

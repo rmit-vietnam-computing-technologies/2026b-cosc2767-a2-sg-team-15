@@ -36,7 +36,7 @@ locals {
       }
       "/rmit-store/${env}/DATABASE_URL" = {
         type  = "SecureString"
-        value = "postgres://${var.db_username}:${var.db_password}@${var.rds_host}:5432/rmit_${env}"
+        value = "postgres://${var.db_username}:${var.db_password}@${var.rds_host}:5432/postgres"
       }
       "/rmit-store/${env}/SEED_ADMIN_EMAIL" = {
         type  = "String"
