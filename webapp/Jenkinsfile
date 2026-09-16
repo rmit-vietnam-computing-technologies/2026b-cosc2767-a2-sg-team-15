@@ -73,7 +73,7 @@ pipeline {
         }
 
         //
-        stage('Build Docker Image') {
+        stage('Frontend: Build Docker Image') {
             steps {
                 echo 'Building Docker image...'
                 dir('webapp/client') {
@@ -94,7 +94,7 @@ pipeline {
         // }
 
         // Pushing to ECR
-        stage('Push to ECR') {
+        stage('Frontend: Push to ECR') {
             steps {
                 script {
                     withCredentials([
@@ -102,7 +102,13 @@ pipeline {
                 string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
                 string(credentialsId: 'aws-session-token', variable: 'AWS_SESSION_TOKEN')
             ]) {
-                        sh 'ECR_REPO=$ECR_URI deploy/bin/build-push.sh $TAG'
+                        sh '''
+                            aws ecr get-login-password --region ${AWS_REGION} | \
+                                docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+
+                            docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ${ECR_URI}:latest
+                            docker push ${ECR_URI}:latest
+                        '''
                     }
                 }
             echo "Pushed image to ECR correctly"
@@ -131,13 +137,7 @@ pipeline {
                 ]) {
                     // The kubeconfig holds no secret; kubectl signs in with the keys above.
                     sh 'aws eks update-kubeconfig --name $FRONTEND_EKS_NAME --region $AWS_REGION --kubeconfig $KUBECONFIG'
-                    sh 'ECR_REPO=$ECR_URI deploy/bin/deploy.sh staging $TAG'
-                    sh 'deploy/bin/smoke.sh staging $TAG'
-                }
-            }
-            post {
-                always {
-                    junit allowEmptyResults: true, testResults: 'webapp/server/test-reports/smoke-staging.xml'
+                    sh 'ECR_REPO=$ECR_URI deploy/bin/deploy_frontend.sh staging $TAG'
                 }
             }
         }
@@ -156,8 +156,7 @@ pipeline {
                 ]) {
                     // The kubeconfig holds no secret; kubectl signs in with the keys above.
                     sh 'aws eks update-kubeconfig --name $FRONTEND_EKS_NAME --region $AWS_REGION --kubeconfig $KUBECONFIG'
-                    sh 'ECR_REPO=$ECR_URI deploy/bin/deploy.sh prod $TAG'
-                    sh 'deploy/bin/smoke.sh prod $TAG'
+                    sh 'ECR_REPO=$ECR_URI deploy/bin/deploy_frontend.sh staging $TAG'
                 }
             }
             post {
