@@ -35,7 +35,7 @@ CONTAINER_NAME="${DEPLOYMENT_NAME}" # override below if the container name insid
 
 IMAGE="${ECR_REPO}:${IMAGE_TAG}"
 
-kubectl get namespace "$NS" >/dev/null 2>&1 || kubectl create namespace "$NS"
+kubectl get namespace "$NAMESPACE" >/dev/null 2>&1 || kubectl create namespace "$NAMESPACE"
 
 kubectl config use-context "${CLUSTER_NAME}"
 
