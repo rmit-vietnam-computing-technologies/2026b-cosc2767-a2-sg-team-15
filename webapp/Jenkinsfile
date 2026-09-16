@@ -151,7 +151,7 @@ pipeline {
             steps {
                 script {
                     def apiHost = sh(
-                        script: "kubectl get svc api -n ${TARGET_NAMESPACE} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'",
+                        script: "kubectl get svc api -n prod -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'",
                         returnStdout: true
                     ).trim()
                     env.API_URL = "http://${apiHost}/api"
