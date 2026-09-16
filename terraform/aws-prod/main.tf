@@ -61,34 +61,6 @@ module "eks" {
  keypair_name = var.keypair_name
  subnet_ids = module.vpc.public_subnet_id
  vpc_id = module.vpc.vpc_id
- providers = {
-   kubernetes.frontend = kubernetes.frontend
-   kubernetes.backend = kubernetes.backend
- }
-}
-
-data "aws_eks_cluster_auth" "frontend" {
-  name = module.eks.frontend_cluster_name
-}
-
-
-data "aws_eks_cluster_auth" "backend" {
-  name = module.eks.backend_cluster_name
-}
-
-provider "kubernetes" {
-  alias                  = "frontend"
-  host                   = module.eks.frontend_cluster_endpoint
-  cluster_ca_certificate = base64decode(module.eks.frontend_cluster_ca)
-  token                  = data.aws_eks_cluster_auth.frontend.token
-}
-
-
-provider "kubernetes" {
-  alias                  = "backend"
-  host                   = module.eks.backend_cluster_endpoint
-  cluster_ca_certificate = base64decode(module.eks.backend_cluster_ca)
-  token                  = data.aws_eks_cluster_auth.backend.token
 }
 
 resource "cloudflare_dns_record" "jenkins" {

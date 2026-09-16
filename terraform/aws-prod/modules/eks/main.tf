@@ -32,15 +32,6 @@ terraform {
     aws = {
       source = "hashicorp/aws"
     }
-    # The root passes kubernetes.frontend and kubernetes.backend in. Nothing
-    # here uses them: the aws-auth mapping they were for is shadowed by the
-    # EC2_LINUX access entry the node group makes for LabRole, so it never
-    # takes effect. Declared so the root wiring stays valid until it is
-    # removed.
-    kubernetes = {
-      source                = "hashicorp/kubernetes"
-      configuration_aliases = [kubernetes.frontend, kubernetes.backend]
-    }
   }
 }
 
