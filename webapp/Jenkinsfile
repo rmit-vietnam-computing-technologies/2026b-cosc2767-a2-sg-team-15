@@ -1,14 +1,15 @@
-// RMIT University Vietnam
+//  RMIT University Vietnam
 // Course: COSC2767|COSC2805 Systems Deployment and Operations
 // Semester: 2026B
 // Assessment: Assignment 2
-// Author: Vo Hoang Khanh (API stages and post block; frontend stages by Phuong)
-// ID: s3926310
-// Created  date: 14/09/2026
-// Last modified: 14/09/2026
-// Acknowledgement: API stages drafted with Claude (Anthropic); every script
-//   they call was run by hand first (see deploy/README.md). Reference: Jenkins
-//   declarative pipeline syntax, https://www.jenkins.io/doc/book/pipeline/syntax/
+// Author: Le Huy Phuong (Frontend ECR Pushing; API stages and post block by Khanh)
+// ID: s4130965
+// Created  date: 8/09/2026
+// Last modified: 13/09/2026
+// Acknowledgement: Jenkinsfile draft created with Claude in order to grasp the syntax of Jenkinsfile
+// Jenkinsfile were then written by hand based on provided syntax to fit suitable use cases
+// Stages were run by hand before being committed and pushed
+// Stages have been modified multiple time to fit evolving use cases from experimental deployment to production deployment
 
 // One push runs: API tests, frontend image, API image, staging, prod.
 // Prod only on main and only after staging smoke passed. Any red stage
@@ -18,6 +19,7 @@
 // aws-session-token (strings). The deploy stages write their own kubeconfig
 // with aws eks update-kubeconfig; kubectl signs in with those keys.
 // Agent needs docker, aws and kubectl.
+
 
 pipeline {
     agent any

@@ -1,3 +1,19 @@
+#  RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Le Huy Phuong (Container image packaging)
+# ID: s4130965
+# Created  date: 8/09/2026
+# Last modified: 13/09/2026
+# Acknowledgement: Dockerfile was built through provided examples on RMIT Canvas modules
+# Instructions on how to apply custom website's content into existing builder nodes were provided with Claude
+# Instructions were followed and Dockerfile was written and modified by hand
+
+
+
+
+
 # Build inside container
 # Builder environment to build Vue frontend
 FROM node:20-alpine AS builder
