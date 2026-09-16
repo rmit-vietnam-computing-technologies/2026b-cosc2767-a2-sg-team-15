@@ -25,7 +25,8 @@ cd "$(dirname "$0")/../.."
 
 # Pre-create as the current user, or the daemon makes it root-owned.
 mkdir -p webapp/server/test-reports
-
+# Will this fix the perms issue?
+chmod 666 -R webapp/server/test-reports/
 export GIT_COMMIT="$TAG"
 docker compose -f compose.yaml -f compose.ci.yaml build test
 docker compose -f compose.yaml -f compose.ci.yaml run --rm test
