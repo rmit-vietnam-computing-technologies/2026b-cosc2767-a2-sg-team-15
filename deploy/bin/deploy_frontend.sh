@@ -59,7 +59,7 @@ echo "Deploying image:   ${IMAGE}"
 
 RENDERED_MANIFEST="$(mktemp)"
 RENDERED_DEPLOYMENT="$(mktemp)"
-trap 'rm -f "${RENDERED_MANIFEST}" "${RENDERED_SERVICE}"' EXIT
+trap 'rm -f "${RENDERED_MANIFEST}" "${RENDERED_DEPLOYMENT}"' EXIT
 
 sed \
   -e "s|__IMAGE__|${IMAGE}|g" \
@@ -69,10 +69,10 @@ sed \
 sed \
   -e "s|__NAME__|${DEPLOYMENT_NAME}|g" \
   -e "s|__PORT__|${SERVICE_PORT}|g" \
-  "${SERVICE_TEMPLATE}" > "${RENDERED_SERVICE}"
+  "${SERVICE_TEMPLATE}" > "${RENDERED_DEPLOYMENT}"
 
 echo "Applying manifest"
-kubectl apply -f "${RENDERED_DEPLOYMENT}" -f "${RENDERED_SERVICE}" -n "${NAMESPACE}"
+kubectl apply -f "${RENDERED_DEPLOYMENT}" -f "${RENDERED_MANIFEST}" -n "${NAMESPACE}"
 
 echo "Waiting for rollout..."
 kubectl rollout status "deployment/${DEPLOYMENT_NAME}" -n "${NAMESPACE}" --timeout=180s
