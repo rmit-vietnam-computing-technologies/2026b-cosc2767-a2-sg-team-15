@@ -1,6 +1,6 @@
 ---
 - name: Setup Monitoring instance
-  hosts: monitoring_instance
+  hosts: prometheus_instance
   become: true
 
   tasks:
@@ -43,10 +43,11 @@
           - docker-ce
           - docker-ce-cli
           - containerd.io
-          - docker-buildx-plugin
           - docker-compose
           - python3-docker
           - nginx
+          - certbot
+          - python3-certbot-nginx
         state: present
 
     - name: Enable and start Docker
@@ -77,10 +78,10 @@
         owner: root
         group: root
         mode: '0644'
-    
+
     - name: Reload systemd daemon
       systemd:
-        daemon_reload: true 
+        daemon_reload: true
 
     - name: Enable and start monitoring service
       systemd:
@@ -102,36 +103,36 @@
     #     cmd: docker-compose up -d
     #     chdir: /opt/rmit-store/monitoring
 
-    #- name: Setup nginx site for Grafana
-     # template:
-      #  src: grafana.conf.j2
-       # dest: '/etc/nginx/sites-available/{{ fqdn }}'
-        #owner: root
-        #group: root
-        #mode: "0644"
+    - name: Setup nginx site for Grafana
+      template:
+        src: grafana.conf.j2
+        dest: '/etc/nginx/sites-available/{{ fqdn }}'
+        owner: root
+        group: root
+        mode: "0644"
 
-    #- name: Remove default nginx site config
-     # file:
-      #  path: /etc/nginx/sites-enabled/default
-       # state: absent
+    - name: Remove default nginx site config
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
 
-    #- name: Enable grafana nginx site
-    #  file:
-    #    src: /etc/nginx/sites-available/{{ fqdn }}
-     #   dest: /etc/nginx/sites-enabled/{{ fqdn }}
-      #  owner: root
-     #   group: root
-     #   mode: "0644"
-    #    state: link
+    - name: Enable grafana nginx site
+      file:
+        src: /etc/nginx/sites-available/{{ fqdn }}
+        dest: /etc/nginx/sites-enabled/{{ fqdn }}
+        owner: root
+        group: root
+        mode: "0644"
+        state: link
 #
-    #- name: Check nginx configuration
-    #  command: nginx -t
+    - name: Check nginx configuration
+      command: nginx -t
 
-   # - name: Provision let's encrypt certificate for nginx
-    #  command: 'certbot -d {{ fqdn }} --agree-tos -m {{ letsenc_email }}'
+    - name: Provision let's encrypt certificate for nginx
+      command: 'certbot -d {{ fqdn }} --agree-tos -m {{ letsenc_email }}'
 
-   # - name: Enable and restart nginx
-     # systemd:
-      #  name: nginx
-        #state: restarted
-        #enabled: true
+    - name: Enable and restart nginx
+      systemd:
+        name: nginx
+        state: restarted
+        enabled: true

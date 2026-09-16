@@ -16,4 +16,4 @@ scrape_configs:
     metrics_path: /metrics
     static_configs:
       - targets:
-          - "172.31.47.40:80" #this only set up FOR one EC2, will be changed when the eks is completed
+          - "http://ae4e4e168f4c64c2cb01d73858cbe1bb-56540307.us-east-1.elb.amazonaws.com:80" #this only set up FOR one EC2, will be changed when the eks is completed
