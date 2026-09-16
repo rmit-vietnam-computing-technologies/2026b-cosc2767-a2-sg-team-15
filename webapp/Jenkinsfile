@@ -30,9 +30,10 @@ pipeline {
         //ECR information
         AWS_ACCOUNT_ID = '175001367344'
         AWS_REGION = 'us-east-1'
-        ECR_REPO_NAME = 'main_ecr'
+        ECR_REPO_NAME = 'frontend_ecr'
         ECR_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
-
+        BACKEND_ECR_REPO_NAME = 'backend_ecr'
+        BACKEND_ECR_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${BACKEND_ECR_REPO_NAME}"
         // EKS info
         BACKEND_EKS_NAME = 'backend_cluster'
         FRONTNED_EKS_NAME = 'frontend_cluster'
@@ -121,12 +122,12 @@ pipeline {
                     string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
                     string(credentialsId: 'aws-session-token',     variable: 'AWS_SESSION_TOKEN')
                 ]) {
-                    sh 'ECR_REPO=$ECR_URI deploy/bin/build-push.sh $TAG'
+                    sh 'ECR_REPO=$BACKEND_ECR_URI deploy/bin/build-push.sh $TAG'
                 }
             }
         }
 
-        stage('API: deploy staging') {
+        stage('Frontend: deploy staging') {
             environment { KUBECONFIG = "${WORKSPACE}/eks.kubeconfig" }
             steps {
                 withCredentials([
@@ -135,7 +136,7 @@ pipeline {
                     string(credentialsId: 'aws-session-token',     variable: 'AWS_SESSION_TOKEN')
                 ]) {
                     // The kubeconfig holds no secret; kubectl signs in with the keys above.
-                    sh 'aws eks update-kubeconfig --name $BACKEND_EKS_NAME --region $AWS_REGION --kubeconfig $KUBECONFIG'
+                    sh 'aws eks update-kubeconfig --name $FRONTEND_EKS_NAME --region $AWS_REGION --kubeconfig $KUBECONFIG'
                     sh 'ECR_REPO=$ECR_URI deploy/bin/deploy.sh staging $TAG'
                     sh 'deploy/bin/smoke.sh staging $TAG'
                 }
@@ -160,8 +161,54 @@ pipeline {
                     string(credentialsId: 'aws-session-token',     variable: 'AWS_SESSION_TOKEN')
                 ]) {
                     // The kubeconfig holds no secret; kubectl signs in with the keys above.
-                    sh 'aws eks update-kubeconfig --name $BACKEND_EKS_NAME --region $AWS_REGION --kubeconfig $KUBECONFIG'
+                    sh 'aws eks update-kubeconfig --name $FRONTEND_EKS_NAME --region $AWS_REGION --kubeconfig $KUBECONFIG'
                     sh 'ECR_REPO=$ECR_URI deploy/bin/deploy.sh prod $TAG'
+                    sh 'deploy/bin/smoke.sh prod $TAG'
+                }
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: 'webapp/server/test-reports/smoke-prod.xml'
+                }
+            }
+        }
+
+        stage('API: deploy staging') {
+            environment { KUBECONFIG = "${WORKSPACE}/eks.kubeconfig" }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'aws-access-key-id',     variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
+                    string(credentialsId: 'aws-session-token',     variable: 'AWS_SESSION_TOKEN')
+                ]) {
+                    // The kubeconfig holds no secret; kubectl signs in with the keys above.
+                    sh 'aws eks update-kubeconfig --name $BACKEND_EKS_NAME --region $AWS_REGION --kubeconfig $KUBECONFIG'
+                    sh 'ECR_REPO=$BACKEND_ECR_URI deploy/bin/deploy.sh staging $TAG'
+                    sh 'deploy/bin/smoke.sh staging $TAG'
+                }
+            }
+            post {
+                always {
+                    junit allowEmptyResults: true, testResults: 'webapp/server/test-reports/smoke-staging.xml'
+                }
+            }
+        }
+
+        // Same image staging just passed with, promoted. main only.
+        stage('API: deploy prod') {
+            when {
+                anyOf { branch 'main'; expression { env.GIT_BRANCH == 'origin/main' } }
+            }
+            environment { KUBECONFIG = "${WORKSPACE}/eks.kubeconfig" }
+            steps {
+                withCredentials([
+                    string(credentialsId: 'aws-access-key-id',     variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
+                    string(credentialsId: 'aws-session-token',     variable: 'AWS_SESSION_TOKEN')
+                ]) {
+                    // The kubeconfig holds no secret; kubectl signs in with the keys above.
+                    sh 'aws eks update-kubeconfig --name $BACKEND_EKS_NAME --region $AWS_REGION --kubeconfig $KUBECONFIG'
+                    sh 'ECR_REPO=$BACKEND_ECR_URI deploy/bin/deploy.sh prod $TAG'
                     sh 'deploy/bin/smoke.sh prod $TAG'
                 }
             }
