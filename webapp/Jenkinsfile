@@ -28,13 +28,14 @@ pipeline {
         DOCKER_TAG = "v2"
 
         //ECR information
-        AWS_ACCOUNT_ID = '909892551050'
+        AWS_ACCOUNT_ID = '175001367344'
         AWS_REGION = 'us-east-1'
-        ECR_REPO_NAME = 'rmit-store-frontend'
+        ECR_REPO_NAME = 'main_ecr'
         ECR_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
 
-        // Backend
-        ECR_API_REPO = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/rmit-store-api"
+        // EKS info
+        BACKEND_EKS_NAME = 'backend_cluster'
+        FRONTNED_EKS_NAME = 'frontend_cluster'
     }
 
     stages {
@@ -120,7 +121,7 @@ pipeline {
                     string(credentialsId: 'aws-secret-access-key', variable: 'AWS_SECRET_ACCESS_KEY'),
                     string(credentialsId: 'aws-session-token',     variable: 'AWS_SESSION_TOKEN')
                 ]) {
-                    sh 'ECR_REPO=$ECR_API_REPO deploy/bin/build-push.sh $TAG'
+                    sh 'ECR_REPO=$ECR_URI deploy/bin/build-push.sh $TAG'
                 }
             }
         }
@@ -134,8 +135,8 @@ pipeline {
                     string(credentialsId: 'aws-session-token',     variable: 'AWS_SESSION_TOKEN')
                 ]) {
                     // The kubeconfig holds no secret; kubectl signs in with the keys above.
-                    sh 'aws eks update-kubeconfig --name rmit-store-eks --region $AWS_REGION --kubeconfig $KUBECONFIG'
-                    sh 'ECR_REPO=$ECR_API_REPO deploy/bin/deploy.sh staging $TAG'
+                    sh 'aws eks update-kubeconfig --name $BACKEND_EKS_NAME --region $AWS_REGION --kubeconfig $KUBECONFIG'
+                    sh 'ECR_REPO=$ECR_URI deploy/bin/deploy.sh staging $TAG'
                     sh 'deploy/bin/smoke.sh staging $TAG'
                 }
             }
@@ -159,8 +160,8 @@ pipeline {
                     string(credentialsId: 'aws-session-token',     variable: 'AWS_SESSION_TOKEN')
                 ]) {
                     // The kubeconfig holds no secret; kubectl signs in with the keys above.
-                    sh 'aws eks update-kubeconfig --name rmit-store-eks --region $AWS_REGION --kubeconfig $KUBECONFIG'
-                    sh 'ECR_REPO=$ECR_API_REPO deploy/bin/deploy.sh prod $TAG'
+                    sh 'aws eks update-kubeconfig --name $BACKEND_EKS_NAME --region $AWS_REGION --kubeconfig $KUBECONFIG'
+                    sh 'ECR_REPO=$ECR_URI deploy/bin/deploy.sh prod $TAG'
                     sh 'deploy/bin/smoke.sh prod $TAG'
                 }
             }
