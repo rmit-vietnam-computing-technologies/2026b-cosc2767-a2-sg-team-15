@@ -35,7 +35,7 @@ SERVICE_PORT="${SERVICE_PORT:-8080}"
 # adjust if your directory layout differs (e.g. deploy/bin/ + deploy/manifests/).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MANIFEST_TEMPLATE="${SCRIPT_DIR}/../k8s/base/frontend-deployment.yml"
-SERVICE_TEMPLATE="${SCRIPT_DIR}/../k8s/base/frontend-service.yaml"
+SERVICE_TEMPLATE="${SCRIPT_DIR}/../k8s/base/frontend_service.yaml"
 
 if [[ ! -f "${MANIFEST_TEMPLATE}" ]]; then
   echo "Error: manifest template not found at ${MANIFEST_TEMPLATE}" >&2
