@@ -113,3 +113,6 @@ RUN mkdir -p /app/test-reports # && chown app:app /app/test-reports
 ENV DJANGO_SETTINGS_MODULE=config.settings.test
 
 CMD ["pytest"]
+
+# Allow rw of test reports
+RUN chmod -R 666 /app/test-reports
