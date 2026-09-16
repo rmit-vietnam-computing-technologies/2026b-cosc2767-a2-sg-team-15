@@ -106,7 +106,7 @@ pipeline {
                             aws ecr get-login-password --region ${AWS_REGION} | \
                                 docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
 
-                            docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ${ECR_URI}:latest
+                            docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ${ECR_URI}:${TAG}
                             docker push ${ECR_URI}:latest
                         '''
                     }
@@ -137,7 +137,7 @@ pipeline {
                 ]) {
                     // The kubeconfig holds no secret; kubectl signs in with the keys above.
                     sh 'aws eks update-kubeconfig --name $FRONTEND_EKS_NAME --region $AWS_REGION --kubeconfig $KUBECONFIG'
-                    sh 'ECR_REPO=$ECR_URI deploy/bin/deploy_frontend.sh staging $TAG'
+                    sh 'ECR_REPO=$ECR_URI deploy/bin/deploy_frontend.sh frontend-staging $TAG'
                 }
             }
         }
@@ -156,7 +156,7 @@ pipeline {
                 ]) {
                     // The kubeconfig holds no secret; kubectl signs in with the keys above.
                     sh 'aws eks update-kubeconfig --name $FRONTEND_EKS_NAME --region $AWS_REGION --kubeconfig $KUBECONFIG'
-                    sh 'ECR_REPO=$ECR_URI deploy/bin/deploy_frontend.sh staging $TAG'
+                    sh 'ECR_REPO=$ECR_URI deploy/bin/deploy_frontend.sh frontend-prod $TAG'
                 }
             }
             post {
