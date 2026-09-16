@@ -149,7 +149,7 @@ pipeline {
         }
 
         // Same image staging just passed with, promoted. main only.
-        stage('API: deploy prod') {
+        stage('Frontend: deploy prod') {
             when {
                 anyOf { branch 'main'; expression { env.GIT_BRANCH == 'origin/main' } }
             }
