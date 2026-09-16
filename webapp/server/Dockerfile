@@ -63,8 +63,8 @@ RUN apt-get update \
 
 WORKDIR /app
 
-RUN groupadd --gid 1001 app \
-    && useradd --uid 1001 --gid app --no-create-home --shell /usr/sbin/nologin app \
+RUN groupadd --gid 1000 app \
+    && useradd --uid 1000 --gid app --no-create-home --shell /usr/sbin/nologin app \
     && mkdir -p /app/media \
     && chown -R app:app /app /var/lib/nginx /var/log/nginx
 
@@ -80,7 +80,7 @@ COPY --chown=app:app apps ./apps
 COPY --chown=app:app templates ./templates
 COPY --chown=app:app seed_assets ./seed_assets
 
-USER 1001:1001
+USER 1000:1000
 
 # collectstatic under prod settings so the whitenoise manifest exists.
 # The two values only satisfy prod's boot guard.
@@ -107,12 +107,8 @@ RUN pip install --no-cache-dir -r requirements-dev.txt
 
 COPY --chown=app:app pytest.ini .coveragerc ./
 COPY --chown=app:app tests ./tests
-RUN mkdir -p /app/test-reports && chown app:app /app/test-reports
-USER 1001:1001
+RUN mkdir -p /app/test-reports
 
 ENV DJANGO_SETTINGS_MODULE=config.settings.test
 
 CMD ["pytest"]
-
-# Allow rw of test reports
-RUN chmod -R 666 /app/test-reports

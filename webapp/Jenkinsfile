@@ -61,7 +61,7 @@ pipeline {
                 script {
                     env.TAG = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                 }
-                sh 'deploy/bin/test.sh $TAG'
+                sh 'export HOST_UID=$(id -u) HOST_GID=$(id -g) && deploy/bin/test.sh $TAG'
             }
             post {
                 always {
