@@ -20,6 +20,7 @@ omit =
     */__init__.py
     */apps.py
     */admin.py
+data_file = test-reports/.coverage
 
 [report]
 show_missing = True
