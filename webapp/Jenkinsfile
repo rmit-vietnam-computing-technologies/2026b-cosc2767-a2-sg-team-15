@@ -161,8 +161,8 @@ pipeline {
                 }
                 echo 'Building Docker image...'
                 dir('webapp/client') {
-                    sh "echo ${API_URL}"
-                    sh 'docker build -t ${DOCKER_IMAGE_NAME}:${TAG} .'
+                    sh "echo $API_URL"
+                    sh 'docker build --build-arg API_URL="$API_URL" -t ${DOCKER_IMAGE_NAME}:${TAG} .'
                 }
                 echo 'Docker image built'
             }
