@@ -159,11 +159,6 @@ pipeline {
                     sh 'ECR_REPO=$ECR_URI deploy/bin/deploy_frontend.sh frontend-prod $TAG'
                 }
             }
-            post {
-                always {
-                    junit allowEmptyResults: true, testResults: 'webapp/server/test-reports/smoke-prod.xml'
-                }
-            }
         }
 
         stage('API: deploy staging') {
