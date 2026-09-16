@@ -198,6 +198,7 @@ pipeline {
                     // The kubeconfig holds no secret; kubectl signs in with the keys above.
                     sh 'aws eks update-kubeconfig --name $BACKEND_EKS_NAME --region $AWS_REGION --kubeconfig $KUBECONFIG'
                     sh 'ECR_REPO=$BACKEND_ECR_URI deploy/bin/deploy.sh prod $TAG'
+                    sh 'ECR_REPO=$BACKEND_ECR_URI deploy/bin/seed.sh prod $TAG'
                     sh 'deploy/bin/smoke.sh prod $TAG'
                 }
             }
