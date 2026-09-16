@@ -198,3 +198,5 @@ desktop.ini
 
 # Git does not track empty directories; keep the markers we add
 !**/.gitkeep
+# tfplan
+**/*.tfplan
