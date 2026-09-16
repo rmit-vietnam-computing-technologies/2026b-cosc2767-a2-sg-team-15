@@ -107,7 +107,7 @@ RUN pip install --no-cache-dir -r requirements-dev.txt
 
 COPY --chown=app:app pytest.ini .coveragerc ./
 COPY --chown=app:app tests ./tests
-RUN mkdir -p /app/test-reports && chown app:app /app/test-reports
+RUN mkdir -p /app/test-reports # && chown app:app /app/test-reports
 # USER 1000:1000
 
 ENV DJANGO_SETTINGS_MODULE=config.settings.test
