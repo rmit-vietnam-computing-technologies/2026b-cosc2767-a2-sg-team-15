@@ -1,3 +1,17 @@
+#  RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Le Huy Phuong (Web UI Test Suite)
+# ID: s4130965
+# Created  date: 10/09/2026
+# Last modified: 13/09/2026
+# Acknowledgement: Test suites were created with the help of Selenium IDE. 
+# Assertion tests with base Selenium IDE input were trialed and deemed unsuitable, and unreliable
+# Claude provided helped with providing instructions on structuring, element detection and syntax
+# Following the provided framework/instruction, tests were written by hand to ensure reliable tests 
+
+
 import pytest
 import time
 

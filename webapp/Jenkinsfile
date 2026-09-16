@@ -1,3 +1,16 @@
+//  RMIT University Vietnam
+// Course: COSC2767|COSC2805 Systems Deployment and Operations
+// Semester: 2026B
+// Assessment: Assignment 2
+// Author: Le Huy Phuong (Frontend ECR Pushing; API stages and post block by Khanh)
+// ID: s4130965
+// Created  date: 8/09/2026
+// Last modified: 13/09/2026
+// Acknowledgement: Jenkinsfile draft created with Claude in order to grasp the syntax of Jenkinsfile
+// Jenkinsfile were then written by hand based on provided syntax to fit suitable use cases
+// Stages were run by hand before being committed and pushed
+// Stages have been modified multiple time to fit evolving use cases from experimental deployment to production deployment
+
 pipeline {
     agent any
 
