@@ -1,3 +1,12 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Truong Cong Minh
+# ID: s4048436
+# Created date: 30/8/2026
+# Last modified: 2/9/2026
+# Acknowledgement: django-prometheus documentation. https://pypi.org/project/django-prometheus/
 """
 Root URL configuration.
 

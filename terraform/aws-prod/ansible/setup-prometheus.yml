@@ -1,7 +1,13 @@
 ---
-- name: Setup Monitoring instance
-  hosts: prometheus_instance
-  become: true
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Truong Cong Minh
+# ID: s4048436
+# Created date: 14/9/2026
+# Last modified: 16/9/2026
+# Acknowledgement: Docker guide installing docker in debian: https://docs.docker.com/engine/install/debian/
 
   tasks:
     - name: Update apt cache
@@ -88,20 +94,6 @@
         name: store-monitoring.service
         state: started
         enabled: true
-
-    #(leaving it here just to ask if its possible (all the config, pull and start the containers's code are in docker-compose.yml)
-    # - name: Copy monitoring configuration to server
-    #   copy:
-    #     src: monitoring/
-    #     dest: /opt/rmit-store/monitoring/
-    #     owner: admin
-    #     group: admin
-    #     mode: '0755'
-
-    # - name: Start monitoring stack with Docker Compose
-    #   command:
-    #     cmd: docker-compose up -d
-    #     chdir: /opt/rmit-store/monitoring
 
     - name: Setup nginx site for Grafana
       template:

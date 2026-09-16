@@ -1,3 +1,13 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Truong Cong Minh
+# ID: s4048436
+# Created date: 30/8/2026
+# Last modified: 16/9/2026
+# Acknowledgement: Prometheus documentation. https://prometheus.io/
+
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
@@ -16,4 +26,4 @@ scrape_configs:
     metrics_path: /metrics
     static_configs:
       - targets:
-          - "ae4e4e168f4c64c2cb01d73858cbe1bb-56540307.us-east-1.elb.amazonaws.com:80" #this only set up FOR one EC2, will be changed when the eks is completed
+          - "ae4e4e168f4c64c2cb01d73858cbe1bb-56540307.us-east-1.elb.amazonaws.com:80" 

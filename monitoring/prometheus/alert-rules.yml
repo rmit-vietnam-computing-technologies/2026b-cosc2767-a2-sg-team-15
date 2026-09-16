@@ -1,3 +1,12 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Truong Cong Minh
+# ID: s4048436
+# Created date: 30/8/2026
+# Last modified: 16/9/2026
+# Acknowledgement:Prometheus documentation. https://prometheus.io/
 groups:
   - name: rmit-store-alerts
     rules:
@@ -9,8 +18,8 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "RMIT Store backend is down"
-          description: "Prometheus has been unable to scrape the Django backend for more than 2 minutes."
+          summary: "RMIT store backend is down"
+          description: "Prometheus unable to scrape the Django backend for more than 2 minutes."
 
       # 2. Too many HTTP 5xx responses
       - alert: HighHTTP5xxRate
@@ -24,7 +33,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "RMIT Store has a high HTTP 5xx rate"
+          summary: "RMIT store has high HTTP 5xx rate"
           description: "More than 5% of HTTP responses have been 5xx errors for the last 5 minutes."
 
       # 3. High 95th-percentile request latency
@@ -40,5 +49,5 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "RMIT Store HTTP latency is high"
-          description: "The 95th-percentile HTTP request latency has exceeded 1 second for the last 5 minutes."
+          summary: "RMIT store HTTP latency is high"
+          description: "95th-percentile HTTP request latency exceeded 1 second for the last 5 minutes."
