@@ -180,6 +180,8 @@ jenkins_home/jobs/**
 !jenkins_home/jobs/**/
 !jenkins_home/jobs/**/config.xml
 
+# tfplan
+**/*.tfplan
 # ---------------------------------------------------------------------------
 # Editors, OS and local caches not covered upstream
 # ---------------------------------------------------------------------------
