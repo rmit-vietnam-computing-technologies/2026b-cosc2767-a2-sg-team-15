@@ -146,10 +146,12 @@ pipeline {
         //     }
         // }
 
-        // At this point Kubectl still has backend config, so might as well take the API URL from there.
         stage('Frontend: Build Docker Image') {
             steps {
                 script {
+                    // So it isn't apparently.
+                    // At this point Kubectl still has backend config, so might as well take the API URL from there.
+                    sh 'aws eks update-kubeconfig --name $BACKEND_EKS_NAME --region $AWS_REGION --kubeconfig $KUBECONFIG'
                     def apiHost = sh(
                         script: "kubectl get svc api -n prod -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'",
                         returnStdout: true
