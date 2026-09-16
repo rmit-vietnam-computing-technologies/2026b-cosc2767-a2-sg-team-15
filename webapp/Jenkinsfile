@@ -26,11 +26,11 @@ pipeline {
         // Docker image info
         DOCKER_IMAGE_NAME = 'rmit-store-frontend'
         DOCKER_TAG = "v2"
-        
+
         //ECR information
-        AWS_ACCOUNT_ID = '909892551050'          
+        AWS_ACCOUNT_ID = '909892551050'
         AWS_REGION = 'us-east-1'
-        ECR_REPO_NAME = 'rmit-store-frontend'    
+        ECR_REPO_NAME = 'rmit-store-frontend'
         ECR_URI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
 
         // Backend
@@ -42,7 +42,7 @@ pipeline {
         stage('Ensure docker is running') {
             steps {
                sh '''
-                if ! docker ps &> /dev/null; then
+                if ! docker ps > /dev/null; then
                     echo "Docker has not started"
                     sudo service docker start
                     sleep 10
@@ -70,7 +70,7 @@ pipeline {
             }
         }
 
-        // 
+        //
         stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image...'
@@ -89,7 +89,7 @@ pipeline {
         //     }
         //         echo 'Checking out test passed'
         //     }
-        // }   
+        // }
 
         // Pushing to ECR
         stage('Push to ECR') {
@@ -103,7 +103,7 @@ pipeline {
                         sh '''
                             aws ecr get-login-password --region ${AWS_REGION} | \
                                 docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
-                    
+
                             docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ${ECR_URI}:latest
                             docker push ${ECR_URI}:latest
                         '''
