@@ -27,9 +27,20 @@ DEPLOYMENT_NAME="$1"
 IMAGE_TAG="$2"
 
 # --- Adjust these to match your actual setup ---
-NAMESPACE="${DEPLOYMENT_NAME}"
-CONTAINER_NAME="frontend" # override below if the container name inside the pod spec differs
-# -------------------------------------------------
+NAMESPACE="staging"
+# ---------------------------------------------
+
+# Path to the manifest template, relative to this script's own location -
+# adjust if your directory layout differs (e.g. deploy/bin/ + deploy/manifests/).
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MANIFEST_TEMPLATE="${SCRIPT_DIR}/../k8s/base/frontend-deployment.yaml"
+
+if [[ ! -f "${MANIFEST_TEMPLATE}" ]]; then
+  echo "Error: manifest template not found at ${MANIFEST_TEMPLATE}" >&2
+  exit 1
+fi
+
+kubectl get namespace "$NAMESPACE" >/dev/null 2>&1 || kubectl create namespace "$NAMESPACE"
 
 # Assumes the caller has already pointed KUBECONFIG (or ~/.kube/config) at
 # the right cluster - e.g. via `aws eks update-kubeconfig` run beforehand,
@@ -44,11 +55,16 @@ IMAGE="${ECR_REPO}:${IMAGE_TAG}"
 echo "Target namespace:  ${NAMESPACE}"
 echo "Deploying image:   ${IMAGE}"
 
-kubectl get namespace "$NAMESPACE" >/dev/null 2>&1 || kubectl create namespace "$NAMESPACE"
+RENDERED_MANIFEST="$(mktemp)"
+trap 'rm -f "${RENDERED_MANIFEST}"' EXIT
 
-kubectl set image "deployment/${DEPLOYMENT_NAME}" \
-  "${CONTAINER_NAME}=${IMAGE}" \
-  -n "${NAMESPACE}"
+sed \
+  -e "s|__IMAGE__|${IMAGE}|g" \
+  -e "s|__NAME__|${DEPLOYMENT_NAME}|g" \
+  "${MANIFEST_TEMPLATE}" > "${RENDERED_MANIFEST}"
+
+echo "Applying manifest (creates the Deployment if it doesn't exist yet, updates it otherwise)..."
+kubectl apply -f "${RENDERED_MANIFEST}" -n "${NAMESPACE}"
 
 echo "Waiting for rollout..."
 kubectl rollout status "deployment/${DEPLOYMENT_NAME}" -n "${NAMESPACE}" --timeout=180s
