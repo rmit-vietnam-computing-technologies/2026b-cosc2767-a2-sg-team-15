@@ -27,17 +27,24 @@ DEPLOYMENT_NAME="$1"
 IMAGE_TAG="$2"
 
 # --- Adjust these to match your actual setup ---
-CLUSTER_NAME="frontend_cluster"
-REGION="us-east-1"                 # match wherever the lab actually provisions
-NAMESPACE=$DEPLOYMENT_NAME
-CONTAINER_NAME="${DEPLOYMENT_NAME}" # override below if the container name inside the pod spec differs
+NAMESPACE="${DEPLOYMENT_NAME}"
+CONTAINER_NAME="frontend" # override below if the container name inside the pod spec differs
 # -------------------------------------------------
+
+# Assumes the caller has already pointed KUBECONFIG (or ~/.kube/config) at
+# the right cluster - e.g. via `aws eks update-kubeconfig` run beforehand,
+# as the Jenkins stage calling this script already does.
+if [[ -z "${KUBECONFIG:-}" ]] && [[ ! -f "${HOME}/.kube/config" ]]; then
+  echo "Error: no KUBECONFIG set and no ~/.kube/config found. Run 'aws eks update-kubeconfig' first." >&2
+  exit 1
+fi
 
 IMAGE="${ECR_REPO}:${IMAGE_TAG}"
 
-kubectl get namespace "$NAMESPACE" >/dev/null 2>&1 || kubectl create namespace "$NAMESPACE"
+echo "Target namespace:  ${NAMESPACE}"
+echo "Deploying image:   ${IMAGE}"
 
-kubectl config use-context "${CLUSTER_NAME}"
+kubectl get namespace "$NAMESPACE" >/dev/null 2>&1 || kubectl create namespace "$NAMESPACE"
 
 kubectl set image "deployment/${DEPLOYMENT_NAME}" \
   "${CONTAINER_NAME}=${IMAGE}" \
