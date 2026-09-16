@@ -27,13 +27,15 @@ DEPLOYMENT_NAME="$1"
 IMAGE_TAG="$2"
 
 # --- Adjust these to match your actual setup ---
-NAMESPACE="staging"
+NAMESPACE="${DEPLOYMENT_NAME}"
+SERVICE_PORT="${SERVICE_PORT:-8080}"
 # ---------------------------------------------
 
 # Path to the manifest template, relative to this script's own location -
 # adjust if your directory layout differs (e.g. deploy/bin/ + deploy/manifests/).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MANIFEST_TEMPLATE="${SCRIPT_DIR}/../k8s/base/frontend-deployment.yml"
+SERVICE_TEMPLATE="${SCRIPT_DIR}/../k8s/base/frontend-service.yaml"
 
 if [[ ! -f "${MANIFEST_TEMPLATE}" ]]; then
   echo "Error: manifest template not found at ${MANIFEST_TEMPLATE}" >&2
@@ -56,15 +58,21 @@ echo "Target namespace:  ${NAMESPACE}"
 echo "Deploying image:   ${IMAGE}"
 
 RENDERED_MANIFEST="$(mktemp)"
-trap 'rm -f "${RENDERED_MANIFEST}"' EXIT
+RENDERED_DEPLOYMENT="$(mktemp)"
+trap 'rm -f "${RENDERED_MANIFEST}" "${RENDERED_SERVICE}"' EXIT
 
 sed \
   -e "s|__IMAGE__|${IMAGE}|g" \
   -e "s|__NAME__|${DEPLOYMENT_NAME}|g" \
   "${MANIFEST_TEMPLATE}" > "${RENDERED_MANIFEST}"
 
-echo "Applying manifest (creates the Deployment if it doesn't exist yet, updates it otherwise)..."
-kubectl apply -f "${RENDERED_MANIFEST}" -n "${NAMESPACE}"
+sed \
+  -e "s|__NAME__|${DEPLOYMENT_NAME}|g" \
+  -e "s|__PORT__|${SERVICE_PORT}|g" \
+  "${SERVICE_TEMPLATE}" > "${RENDERED_SERVICE}"
+
+echo "Applying manifest"
+kubectl apply -f "${RENDERED_DEPLOYMENT}" -f "${RENDERED_SERVICE}" -n "${NAMESPACE}"
 
 echo "Waiting for rollout..."
 kubectl rollout status "deployment/${DEPLOYMENT_NAME}" -n "${NAMESPACE}" --timeout=180s

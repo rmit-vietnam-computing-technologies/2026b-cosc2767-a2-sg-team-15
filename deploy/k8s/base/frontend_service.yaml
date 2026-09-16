@@ -1,0 +1,23 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Bao Nguyen Pham Gia
+# ID: s4143691
+# Created  date: 16/09/2026
+# Last modified: 16/09/2026
+# Acknowledgement: Drafted with Claude (Anthropic) (yes, I gave in to the AI slop.)
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: __NAME__
+spec:
+  type: LoadBalancer
+  selector:
+    app: __NAME__
+  ports:
+    - name: http
+      port: __PORT__
+      targetPort: http
