@@ -9,42 +9,42 @@
 # Last modified: 16/9/2026
 # Acknowledgement: Docker guide installing docker in debian: https://docs.docker.com/engine/install/debian/
 
-  tasks:
-    - name: Update apt cache
-      apt:
-        update_cache: true
-        cache_valid_time: 3600
+tasks:
+   - name: Update apt cache
+     apt:
+       update_cache: true
+       cache_valid_time: 3600
 
-    - name: Install required dependencies
-      apt:
-        pkg:
-          - gnupg
-          - git
-          - curl
-          - ca-certificates
-        state: present
+   - name: Install required dependencies
+     apt:
+       pkg:
+         - gnupg
+         - git
+         - curl
+         - ca-certificates
+       state: present
 
     # Adapted from Docker guide: https://docs.docker.com/engine/install/debian/
-    - name: Create apt keyring dir
-      file:
-        path: /etc/apt/keyrings/
-        state: directory
-        mode: '0755'
+   - name: Create apt keyring dir
+     file:
+       path: /etc/apt/keyrings/
+       state: directory
+       mode: '0755'
 
-    - name: Download Docker repo key
-      get_url:
-        url: https://download.docker.com/linux/debian/gpg
-        dest: /etc/apt/keyrings/docker.asc
-        # sudo chmod a+r /etc/apt/keyrings/docker.asc
-        mode: '0644'
+   - name: Download Docker repo key
+     get_url:
+       url: https://download.docker.com/linux/debian/gpg
+       dest: /etc/apt/keyrings/docker.asc
+       # sudo chmod a+r /etc/apt/keyrings/docker.asc
+       mode: '0644'
 
-    - name: Add docker apt repo
-      apt_repository:
-        repo: "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
-        state: present
+   - name: Add docker apt repo
+     apt_repository:
+       repo: "deb [signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
+       state: present
 
-    - name: Install docker, python3 docker sdk, and nginx
-      apt:
+   - name: Install docker, python3 docker sdk, and nginx
+     apt:
         pkg:
           - docker-ce
           - docker-ce-cli
@@ -56,28 +56,28 @@
           - python3-certbot-nginx
         state: present
 
-    - name: Enable and start Docker
-      systemd:
+   - name: Enable and start Docker
+     systemd:
         name: docker
         state: started
         enabled: true
 
-    - name: Add user to docker group
-      user:
+   - name: Add user to docker group
+     user:
         name: admin
         groups: docker
         append: true
 
-    - name: Copy monitoring folder to server
-      copy:
+   - name: Copy monitoring folder to server
+     copy:
         src: ../../../monitoring/
         dest: /opt/rmit-store/monitoring/
         owner: admin
         group: admin
         mode: '0755'
 
-    - name: Copy monitoring systemd service
-      copy:
+   - name: Copy monitoring systemd service
+     copy:
         remote_src: true
         src:  /opt/rmit-store/monitoring/store-monitoring.service
         dest: /usr/lib/systemd/system/store-monitoring.service
@@ -85,31 +85,31 @@
         group: root
         mode: '0644'
 
-    - name: Reload systemd daemon
-      systemd:
+   - name: Reload systemd daemon
+     systemd:
         daemon_reload: true
 
-    - name: Enable and start monitoring service
-      systemd:
+   - name: Enable and start monitoring service
+     systemd:
         name: store-monitoring.service
         state: started
         enabled: true
 
-    - name: Setup nginx site for Grafana
-      template:
+   - name: Setup nginx site for Grafana
+     template:
         src: grafana.conf.j2
         dest: '/etc/nginx/sites-available/{{ fqdn }}'
         owner: root
         group: root
         mode: "0644"
 
-    - name: Remove default nginx site config
-      file:
+   - name: Remove default nginx site config
+     file:
         path: /etc/nginx/sites-enabled/default
         state: absent
 
-    - name: Enable grafana nginx site
-      file:
+   - name: Enable grafana nginx site
+     file:
         src: /etc/nginx/sites-available/{{ fqdn }}
         dest: /etc/nginx/sites-enabled/{{ fqdn }}
         owner: root
@@ -117,14 +117,14 @@
         mode: "0644"
         state: link
 #
-    - name: Check nginx configuration
-      command: nginx -t
+   - name: Check nginx configuration
+     command: nginx -t
 
-    - name: Provision let's encrypt certificate for nginx
-      command: 'certbot -d {{ fqdn }} --agree-tos -m {{ letsenc_email }}'
+   - name: Provision let's encrypt certificate for nginx
+     command: 'certbot -d {{ fqdn }} --agree-tos -m {{ letsenc_email }}'
 
-    - name: Enable and restart nginx
-      systemd:
+   - name: Enable and restart nginx
+     systemd:
         name: nginx
         state: restarted
         enabled: true
