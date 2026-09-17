@@ -1,3 +1,14 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Nguyen Bao Toan
+# ID: s3926310
+# Created  date: 05/09/2026
+# Last modified: 17/09/2026
+# Acknowledgement: Drafted with Claude (Anthropic); the author ran and
+#   verified it again. References: https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_cluster
+
 # Security group for the EKS cluster control plane
 resource "aws_security_group" "eks_cluster_sg" {
   name        = "${var.cluster_name}-sg"
