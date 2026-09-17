@@ -1,3 +1,5 @@
+# Copied verbatim from terraform/backend/secrets.tf with minimal modification by Bao
+
 # RMIT University Vietnam
 # Course: COSC2767|COSC2805 Systems Deployment and Operations
 # Semester: 2026B

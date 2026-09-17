@@ -1,3 +1,14 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Bao Nguyen Pham Gia
+# ID: s4143691
+# Created date: 8/9/2026
+# Last modified: 16/9/2026
+# Acknowledgement: Ansible documentation https://docs.ansible.com/projects/ansible/latest/
+
+
 ---
 - import_playbook: setup-jenkins.yml
 - import_playbook: setup-prometheus.yml
