@@ -1,3 +1,14 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Bao Nguyen Pham Gia
+# ID: s4143691
+# Created date: 8/9/2026
+# Last modified: 16/9/2026
+# Acknowledgement: https://askubuntu.com/questions/1459175/how-to-run-a-docker-compose-as-a-systemd-service#1459176
+
+
 [Unit]
 Requires=docker.service
 Wants=network-online.target
