@@ -1,3 +1,14 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Nguyen Bao Toan
+# ID: s3926310
+# Created  date: 05/09/2026
+# Last modified: 17/09/2026
+# Acknowledgement: Drafted with Claude (Anthropic); the author ran and
+#   verified it again. References: https://registry.terraform.io/providers/-/aws/latest/docs/resources/iam_role
+
 # AWS Academy Learner Lab pre-provisions this role. Terraform cannot create
 # IAM roles in this environment, so we look it up instead of creating it.
 data "aws_iam_role" "lab_role" {

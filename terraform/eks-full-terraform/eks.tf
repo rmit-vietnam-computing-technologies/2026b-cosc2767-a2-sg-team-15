@@ -1,3 +1,14 @@
+# RMIT University Vietnam
+# Course: COSC2767|COSC2805 Systems Deployment and Operations
+# Semester: 2026B
+# Assessment: Assignment 2
+# Author: Nguyen Bao Toan
+# ID: s3926310
+# Created  date: 05/09/2026
+# Last modified: 17/09/2026
+# Acknowledgement: Drafted with Claude (Anthropic); the author ran and
+#   verified it again. References: https://registry.terraform.io/providers/-/aws/latest/docs/resources/eks_access_entry
+
 # --- EKS control plane ---
 resource "aws_eks_cluster" "this" {
   name     = var.cluster_name
@@ -10,8 +21,8 @@ resource "aws_eks_cluster" "this" {
     endpoint_public_access  = true
     endpoint_private_access = false
   }
-
-  bootstrap_self_managed_addons = false
+//Fixed to true to auto install vpc-cni, coredns, and kube-proxy addons. This is required for the ALB controller to work properly.
+  bootstrap_self_managed_addons = true
 
   access_config {
     authentication_mode = "API_AND_CONFIG_MAP"
